@@ -13,7 +13,7 @@ type DB struct {
 	Links map[string]string
 }
 
-func generateId(n int) (string, error) {
+func generateID(n int) (string, error) {
 	b := make([]byte, n)
 	if _, err := rand.Read(b); err != nil {
 		return "", err
@@ -25,7 +25,7 @@ func generateId(n int) (string, error) {
 func (db *DB) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodPost:
-		id, err := generateId(8)
+		id, err := generateID(8)
 		if err != nil {
 			http.Error(w, "Server is not available!",
 				http.StatusInternalServerError)
