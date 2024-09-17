@@ -39,11 +39,11 @@ func handlePost(w http.ResponseWriter, r *http.Request, database db.Database) {
 	}
 
 	database.SaveLink(id, string(link))
-	shortUrl := "http://localhost:8080/" + id
+	shortURL := "http://localhost:8080/" + id
 
 	w.Header().Set("content-type", "text/plain")
 	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte(shortUrl))
+	w.Write([]byte(shortURL))
 }
 
 func handleGet(w http.ResponseWriter, r *http.Request, database db.Database) {
