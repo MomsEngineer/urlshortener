@@ -23,7 +23,7 @@ func HandlePost(c *gin.Context, database db.Database, BaseURL string) {
 	}
 
 	database.SaveLink(id, string(link))
-	shortURL := BaseURL + id
+	shortURL := BaseURL + "/" + id
 
 	c.String(http.StatusCreated, shortURL)
 }
