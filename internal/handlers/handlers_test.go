@@ -1,4 +1,4 @@
-package app
+package handlers
 
 import (
 	"bytes"
@@ -36,7 +36,7 @@ func TestHandler(t *testing.T) {
 
 	router := gin.New()
 	router.POST("/", func(c *gin.Context) {
-		HandlePost(c, mockDB)
+		HandlePost(c, mockDB, "http://localhost:8080/")
 	})
 	router.GET("/:id", func(c *gin.Context) {
 		HandleGet(c, mockDB)
