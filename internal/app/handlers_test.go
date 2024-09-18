@@ -30,9 +30,10 @@ func (m *MockDB) GetLink(id string) (link string, exists bool) {
 }
 
 func TestHandler(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
 	mockDB := new(MockDB)
 
-	gin.SetMode(gin.TestMode)
 	router := gin.New()
 	router.POST("/", func(c *gin.Context) {
 		HandlePost(c, mockDB)

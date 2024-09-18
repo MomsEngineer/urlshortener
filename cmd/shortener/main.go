@@ -7,8 +7,12 @@ import (
 )
 
 func main() {
+	gin.SetMode(gin.ReleaseMode)
+
 	db := db.NewDB()
-	router := gin.Default()
+
+	router := gin.New()
+	router.SetTrustedProxies(nil)
 
 	router.POST("/", func(c *gin.Context) {
 		app.HandlePost(c, db)
