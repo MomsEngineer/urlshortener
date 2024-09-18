@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -30,7 +31,15 @@ func (m *MockDB) GetLink(id string) (link string, exists bool) {
 
 func TestHandler(t *testing.T) {
 	mockDB := new(MockDB)
-	handler := Handler(mockDB)
+
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	router.POST("/", func(c *gin.Context) {
+		HandlePost(c, mockDB)
+	})
+	router.GET("/:id", func(c *gin.Context) {
+		HandleGet(c, mockDB)
+	})
 
 	tests := []struct {
 		name           string
@@ -69,8 +78,8 @@ func TestHandler(t *testing.T) {
 			method:         http.MethodPut,
 			url:            "/",
 			body:           nil,
-			expectedStatus: http.StatusBadRequest,
-			expectedBody:   "Only GET and POST requests are allowed!",
+			expectedStatus: http.StatusNotFound,
+			expectedBody:   "",
 		},
 	}
 
@@ -79,10 +88,12 @@ func TestHandler(t *testing.T) {
 			req := httptest.NewRequest(tt.method, tt.url, bytes.NewBuffer(tt.body))
 			rr := httptest.NewRecorder()
 
-			handler.ServeHTTP(rr, req)
+			router.ServeHTTP(rr, req)
 
 			assert.Equal(t, tt.expectedStatus, rr.Code)
-			assert.Contains(t, rr.Body.String(), tt.expectedBody)
+			if tt.expectedBody != "" {
+				assert.Contains(t, rr.Body.String(), tt.expectedBody)
+			}
 		})
 	}
 }
