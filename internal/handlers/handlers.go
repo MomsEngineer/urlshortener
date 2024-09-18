@@ -1,4 +1,4 @@
-package app
+package handlers
 
 import (
 	"io"
@@ -9,7 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func HandlePost(c *gin.Context, database db.Database) {
+func HandlePost(c *gin.Context, database db.Database, BaseURL string) {
 	link, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		c.String(http.StatusInternalServerError, "Unable to read request body")
@@ -23,7 +23,7 @@ func HandlePost(c *gin.Context, database db.Database) {
 	}
 
 	database.SaveLink(id, string(link))
-	shortURL := "http://localhost:8080/" + id
+	shortURL := BaseURL + "/" + id
 
 	c.String(http.StatusCreated, shortURL)
 }
