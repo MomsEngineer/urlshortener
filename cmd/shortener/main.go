@@ -1,19 +1,26 @@
 package main
 
 import (
-	"net/http"
-
 	"github.com/MomsEngineer/urlshortener/internal/app"
 	"github.com/MomsEngineer/urlshortener/internal/db"
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
+	gin.SetMode(gin.ReleaseMode)
+
 	db := db.NewDB()
 
-	mux := http.NewServeMux()
-	mux.HandleFunc(`/`, app.Handler(db))
+	router := gin.New()
+	router.SetTrustedProxies(nil)
 
-	if err := http.ListenAndServe("localhost:8080", mux); err != nil {
-		panic(err)
-	}
+	router.POST("/", func(c *gin.Context) {
+		app.HandlePost(c, db)
+	})
+
+	router.GET("/:id", func(c *gin.Context) {
+		app.HandleGet(c, db)
+	})
+
+	router.Run("localhost:8080")
 }
