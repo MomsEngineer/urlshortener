@@ -19,15 +19,16 @@ func NewConfig() *Config {
 		log.Error(err)
 	}
 
-	if cfg.Address == "" {
-		flag.StringVar(&cfg.Address, "a", "localhost:8080", "HTTP-Server address")
+	if cfg.Address == "" || cfg.BaseURL == "" {
+		if cfg.Address == "" {
+			flag.StringVar(&cfg.Address, "a", "localhost:8080", "HTTP server address")
+		}
+		if cfg.BaseURL == "" {
+			flag.StringVar(&cfg.BaseURL, "b", "http://localhost:8080",
+				"Base URL for shortened links")
+		}
+		flag.Parse()
 	}
-
-	if cfg.BaseURL == "" {
-		flag.StringVar(&cfg.BaseURL, "b", "http://localhost:8080",
-			"Base URL for shortened links")
-	}
-	flag.Parse()
 
 	return cfg
 }
