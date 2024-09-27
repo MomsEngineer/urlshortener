@@ -39,7 +39,7 @@ func TestHandler(t *testing.T) {
 		HandlePost(c, mockDB, "http://localhost:8080/")
 	})
 	router.POST("/api/shorten", func(c *gin.Context) {
-		HandlePostApi(c, mockDB, "http://localhost:8080/")
+		HandlePostAPI(c, mockDB, "http://localhost:8080/")
 	})
 	router.GET("/:id", func(c *gin.Context) {
 		HandleGet(c, mockDB)

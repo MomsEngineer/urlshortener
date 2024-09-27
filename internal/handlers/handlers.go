@@ -48,7 +48,7 @@ func HandleGet(c *gin.Context, database db.Database) {
 	c.Redirect(http.StatusTemporaryRedirect, link)
 }
 
-func HandlePostApi(c *gin.Context, database db.Database, BaseURL string) {
+func HandlePostAPI(c *gin.Context, database db.Database, BaseURL string) {
 	var buf bytes.Buffer
 	if _, err := buf.ReadFrom(c.Request.Body); err != nil {
 		http.Error(c.Writer, err.Error(), http.StatusBadRequest)

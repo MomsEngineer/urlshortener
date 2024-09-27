@@ -24,7 +24,7 @@ func main() {
 	})
 
 	router.POST("/api/shorten", func(c *gin.Context) {
-		handlers.HandlePostApi(c, db, cfg.BaseURL)
+		handlers.HandlePostAPI(c, db, cfg.BaseURL)
 	})
 
 	router.GET("/:id", func(c *gin.Context) {
