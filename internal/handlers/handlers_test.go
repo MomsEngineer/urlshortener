@@ -38,6 +38,9 @@ func TestHandler(t *testing.T) {
 	router.POST("/", func(c *gin.Context) {
 		HandlePost(c, mockDB, "http://localhost:8080/")
 	})
+	router.POST("/api/shorten", func(c *gin.Context) {
+		HandlePostAPI(c, mockDB, "http://localhost:8080/")
+	})
 	router.GET("/:id", func(c *gin.Context) {
 		HandleGet(c, mockDB)
 	})
@@ -57,6 +60,22 @@ func TestHandler(t *testing.T) {
 			body:           []byte("https://example.com"),
 			expectedStatus: http.StatusCreated,
 			expectedBody:   "http://localhost:8080/",
+		},
+		{
+			name:           "POST request",
+			method:         http.MethodPost,
+			url:            "/",
+			body:           []byte("https://example.com"),
+			expectedStatus: http.StatusCreated,
+			expectedBody:   "http://localhost:8080/",
+		},
+		{
+			name:           "POST api request",
+			method:         http.MethodPost,
+			url:            "/api/shorten",
+			body:           []byte("{\"url\":\"https://example.com\"}"),
+			expectedStatus: http.StatusCreated,
+			expectedBody:   "{\"result\":\"http://localhost:8080/",
 		},
 		{
 			name:           "Successful GET request",
