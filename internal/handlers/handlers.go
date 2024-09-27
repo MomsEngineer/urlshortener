@@ -56,7 +56,7 @@ func HandlePostApi(c *gin.Context, database db.Database, BaseURL string) {
 	}
 
 	request := struct {
-		Url string `json:"url"`
+		URL string `json:"url"`
 	}{}
 
 	if err := json.Unmarshal(buf.Bytes(), &request); err != nil {
@@ -64,7 +64,7 @@ func HandlePostApi(c *gin.Context, database db.Database, BaseURL string) {
 		return
 	}
 
-	shortURL, err := saveLinkToDatabase(database, BaseURL, request.Url)
+	shortURL, err := saveLinkToDatabase(database, BaseURL, request.URL)
 	if err != nil {
 		c.String(http.StatusInternalServerError, "Could not convert the link.")
 	}
