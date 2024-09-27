@@ -23,6 +23,10 @@ func main() {
 		handlers.HandlePost(c, db, cfg.BaseURL)
 	})
 
+	router.POST("/api/shorten", func(c *gin.Context) {
+		handlers.HandlePostApi(c, db, cfg.BaseURL)
+	})
+
 	router.GET("/:id", func(c *gin.Context) {
 		handlers.HandleGet(c, db)
 	})
