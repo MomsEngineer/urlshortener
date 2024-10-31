@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/MomsEngineer/urlshortener/internal/compresser"
 	"github.com/MomsEngineer/urlshortener/internal/config"
 	"github.com/MomsEngineer/urlshortener/internal/db"
 	"github.com/MomsEngineer/urlshortener/internal/handlers"
@@ -18,6 +19,7 @@ func main() {
 	router.SetTrustedProxies(nil)
 
 	router.Use(logger.Create().Logger())
+	router.Use(compresser.CompresserMiddleware())
 
 	router.POST("/", func(c *gin.Context) {
 		handlers.HandlePost(c, db, cfg.BaseURL)
