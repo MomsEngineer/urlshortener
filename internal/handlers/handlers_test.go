@@ -6,33 +6,15 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/MomsEngineer/urlshortener/internal/handlers/mocks"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 )
 
-type Database interface {
-	SaveLink(id, link string)
-	GetLink(id string) (string, bool)
-}
-
-type MockDB struct{}
-
-func (m *MockDB) SaveLink(id, link string) {
-}
-
-func (m *MockDB) GetLink(id string) (link string, exists bool) {
-	if id == "abc123" {
-		link, exists = "https://example.com", true
-	} else {
-		link, exists = "", false
-	}
-	return
-}
-
-func TestHandler(t *testing.T) {
+func setup() *gin.Engine {
 	gin.SetMode(gin.TestMode)
 
-	mockDB := new(MockDB)
+	mockDB := new(mocks.DB)
 
 	router := gin.New()
 	router.POST("/", func(c *gin.Context) {
@@ -44,6 +26,12 @@ func TestHandler(t *testing.T) {
 	router.GET("/:id", func(c *gin.Context) {
 		HandleGet(c, mockDB)
 	})
+
+	return router
+}
+
+func TestHandler(t *testing.T) {
+	router := setup()
 
 	tests := []struct {
 		name           string
