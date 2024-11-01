@@ -3,9 +3,9 @@ package main
 import (
 	"github.com/MomsEngineer/urlshortener/internal/compresser"
 	"github.com/MomsEngineer/urlshortener/internal/config"
-	"github.com/MomsEngineer/urlshortener/internal/db"
 	"github.com/MomsEngineer/urlshortener/internal/handlers"
 	"github.com/MomsEngineer/urlshortener/internal/logger"
+	"github.com/MomsEngineer/urlshortener/internal/storage"
 	"github.com/gin-gonic/gin"
 )
 
@@ -13,7 +13,8 @@ func main() {
 	gin.SetMode(gin.ReleaseMode)
 
 	cfg := config.NewConfig()
-	db := db.NewDB()
+
+	s, _ := storage.Create()
 
 	router := gin.New()
 	router.SetTrustedProxies(nil)
@@ -22,15 +23,15 @@ func main() {
 	router.Use(compresser.CompresserMiddleware())
 
 	router.POST("/", func(c *gin.Context) {
-		handlers.HandlePost(c, db, cfg.BaseURL)
+		handlers.HandlePost(c, s, cfg.BaseURL)
 	})
 
 	router.POST("/api/shorten", func(c *gin.Context) {
-		handlers.HandlePostAPI(c, db, cfg.BaseURL)
+		handlers.HandlePostAPI(c, s, cfg.BaseURL)
 	})
 
 	router.GET("/:id", func(c *gin.Context) {
-		handlers.HandleGet(c, db)
+		handlers.HandleGet(c, s)
 	})
 
 	router.Run(cfg.Address)
