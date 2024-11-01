@@ -11,7 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func saveLinkToDatabase(ls storage.LinkStorage, baseURL, link string) (string, error) {
+func saveLinkToStorage(ls storage.LinkStorage, baseURL, link string) (string, error) {
 	id, err := utils.GenerateID(8)
 	if err != nil {
 		return "", err
@@ -23,14 +23,14 @@ func saveLinkToDatabase(ls storage.LinkStorage, baseURL, link string) (string, e
 	return shortURL, nil
 }
 
-func HandlePost(c *gin.Context, s storage.LinkStorage, BaseURL string) {
+func HandlePost(c *gin.Context, ls storage.LinkStorage, BaseURL string) {
 	link, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		c.String(http.StatusInternalServerError, "Unable to read request body")
 		return
 	}
 
-	shortURL, err := saveLinkToDatabase(s, BaseURL, string(link))
+	shortURL, err := saveLinkToStorage(ls, BaseURL, string(link))
 	if err != nil {
 		c.String(http.StatusInternalServerError, "Could not convert the link.")
 	}
@@ -64,7 +64,7 @@ func HandlePostAPI(c *gin.Context, ls storage.LinkStorage, BaseURL string) {
 		return
 	}
 
-	shortURL, err := saveLinkToDatabase(ls, BaseURL, request.URL)
+	shortURL, err := saveLinkToStorage(ls, BaseURL, request.URL)
 	if err != nil {
 		c.String(http.StatusInternalServerError, "Could not convert the link.")
 	}
