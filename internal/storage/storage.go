@@ -16,6 +16,13 @@ type Storage struct {
 }
 
 func Create(fileName string) (*Storage, error) {
+	if fileName == "" {
+		return &Storage{
+			db:   db.NewDB(),
+			file: nil,
+		}, nil
+	}
+
 	file, err := fileio.NewFileIO(fileName)
 	if err != nil {
 		return nil, err
@@ -39,12 +46,17 @@ func Create(fileName string) (*Storage, error) {
 }
 
 func (s *Storage) Close() error {
+	if s.file == nil {
+		return nil
+	}
 	return s.file.Close()
 }
 
 func (s *Storage) SaveLink(id, link string) {
 	s.db.SaveLink(id, link)
-	s.file.Write(id, link)
+	if s.file != nil {
+		s.file.Write(id, link)
+	}
 }
 
 func (s *Storage) GetLink(id string) (string, bool) {

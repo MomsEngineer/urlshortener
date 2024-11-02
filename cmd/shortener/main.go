@@ -14,6 +14,7 @@ func main() {
 
 	cfg := config.NewConfig()
 
+	var s *storage.Storage
 	if cfg.FilePath != "" {
 		s, _ := storage.Create(cfg.FilePath)
 		defer s.Close()
