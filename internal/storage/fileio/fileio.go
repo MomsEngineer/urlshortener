@@ -8,9 +8,9 @@ import (
 )
 
 type entry struct {
-	UUID         string `json:"uuid"`
-	Short_url    string `json:"short_url"`
-	Original_url string `json:"original_url"`
+	UUID        string `json:"uuid"`
+	ShortURL    string `json:"short_url"`
+	OriginalURL string `json:"original_url"`
 }
 
 type Reader struct {
@@ -59,17 +59,17 @@ func (f *FileIO) Read() (map[string]string, error) {
 			return nil, err
 		}
 
-		m[entry.Short_url] = entry.Original_url
+		m[entry.ShortURL] = entry.OriginalURL
 	}
 
 	return m, nil
 }
 
-func (f *FileIO) Write(short_url, original_url string) error {
+func (f *FileIO) Write(shortURL, originalURL string) error {
 	return f.w.writeEntry(&entry{
-		UUID:         strconv.FormatUint(uint64(f.w.counter+1), 10),
-		Short_url:    short_url,
-		Original_url: original_url,
+		UUID:        strconv.FormatUint(uint64(f.w.counter+1), 10),
+		ShortURL:    shortURL,
+		OriginalURL: originalURL,
 	})
 }
 
