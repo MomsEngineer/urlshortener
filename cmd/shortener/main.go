@@ -14,8 +14,10 @@ func main() {
 
 	cfg := config.NewConfig()
 
-	s, _ := storage.Create("short-url-db.json")
-	defer s.Close()
+	if cfg.FilePath != "" {
+		s, _ := storage.Create(cfg.FilePath)
+		defer s.Close()
+	}
 
 	router := gin.New()
 	router.SetTrustedProxies(nil)

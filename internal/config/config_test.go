@@ -13,6 +13,7 @@ func TestNewConfig(t *testing.T) {
 		name     string
 		Address  string
 		BaseURL  string
+		FilePath string
 		args     []string
 		expected *Config
 	}{
@@ -20,31 +21,37 @@ func TestNewConfig(t *testing.T) {
 			name: "config without env and flags",
 			args: []string{"cmd"},
 			expected: &Config{
-				Address: "localhost:8080",
-				BaseURL: "http://localhost:8080",
+				Address:  "localhost:8080",
+				BaseURL:  "http://localhost:8080",
+				FilePath: "/tmp/short-url-db.json",
 			},
 		},
 		{
 			name: "config without env and with flags",
 			args: []string{
 				"cmd", "-a", "localhost:9090", "-b", "http://localhost:7777",
+				"-f", "test.json",
 			},
 			expected: &Config{
-				Address: "localhost:9090",
-				BaseURL: "http://localhost:7777",
+				Address:  "localhost:9090",
+				BaseURL:  "http://localhost:7777",
+				FilePath: "test.json",
 			},
 		},
 
 		{
-			name:    "config with env and flags",
-			Address: "localhost:9999",
-			BaseURL: "http://test",
+			name:     "config with env and flags",
+			Address:  "localhost:9999",
+			BaseURL:  "http://test",
+			FilePath: "test.json",
 			args: []string{
 				"cmd", "-a", "localhost:7070", "-b", "http://localhost:7777",
+				"-f", "/tmp/test.json",
 			},
 			expected: &Config{
-				Address: "localhost:9999",
-				BaseURL: "http://test",
+				Address:  "localhost:9999",
+				BaseURL:  "http://test",
+				FilePath: "test.json",
 			},
 		},
 	}
@@ -57,6 +64,10 @@ func TestNewConfig(t *testing.T) {
 
 			if tt.BaseURL != "" {
 				os.Setenv("BASE_URL", tt.BaseURL)
+			}
+
+			if tt.FilePath != "" {
+				os.Setenv("FILE_STORAGE_PATH", tt.FilePath)
 			}
 
 			flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ExitOnError)
