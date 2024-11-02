@@ -14,17 +14,17 @@ import (
 func setup() *gin.Engine {
 	gin.SetMode(gin.TestMode)
 
-	mockDB := new(mocks.DB)
+	mockStorage := new(mocks.Storage)
 
 	router := gin.New()
 	router.POST("/", func(c *gin.Context) {
-		HandlePost(c, mockDB, "http://localhost:8080/")
+		HandlePost(c, mockStorage, "http://localhost:8080/")
 	})
 	router.POST("/api/shorten", func(c *gin.Context) {
-		HandlePostAPI(c, mockDB, "http://localhost:8080/")
+		HandlePostAPI(c, mockStorage, "http://localhost:8080/")
 	})
 	router.GET("/:id", func(c *gin.Context) {
-		HandleGet(c, mockDB)
+		HandleGet(c, mockStorage)
 	})
 
 	return router

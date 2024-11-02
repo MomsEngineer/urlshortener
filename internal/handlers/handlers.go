@@ -6,40 +6,40 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/MomsEngineer/urlshortener/internal/db"
+	"github.com/MomsEngineer/urlshortener/internal/storage"
 	"github.com/MomsEngineer/urlshortener/internal/utils"
 	"github.com/gin-gonic/gin"
 )
 
-func saveLinkToDatabase(database db.Database, baseURL, link string) (string, error) {
+func saveLinkToStorage(ls storage.LinkStorage, baseURL, link string) (string, error) {
 	id, err := utils.GenerateID(8)
 	if err != nil {
 		return "", err
 	}
 
-	database.SaveLink(id, link)
+	ls.SaveLink(id, link)
 	shortURL := baseURL + "/" + id
 
 	return shortURL, nil
 }
 
-func HandlePost(c *gin.Context, database db.Database, BaseURL string) {
+func HandlePost(c *gin.Context, ls storage.LinkStorage, BaseURL string) {
 	link, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		c.String(http.StatusInternalServerError, "Unable to read request body")
 		return
 	}
 
-	shortURL, err := saveLinkToDatabase(database, BaseURL, string(link))
+	shortURL, err := saveLinkToStorage(ls, BaseURL, string(link))
 	if err != nil {
 		c.String(http.StatusInternalServerError, "Could not convert the link.")
 	}
 	c.String(http.StatusCreated, shortURL)
 }
 
-func HandleGet(c *gin.Context, database db.Database) {
+func HandleGet(c *gin.Context, ls storage.LinkStorage) {
 	id := c.Param("id")
-	link, exists := database.GetLink(id)
+	link, exists := ls.GetLink(id)
 	if !exists {
 		c.String(http.StatusNotFound, "Link not found")
 		return
@@ -48,7 +48,7 @@ func HandleGet(c *gin.Context, database db.Database) {
 	c.Redirect(http.StatusTemporaryRedirect, link)
 }
 
-func HandlePostAPI(c *gin.Context, database db.Database, BaseURL string) {
+func HandlePostAPI(c *gin.Context, ls storage.LinkStorage, BaseURL string) {
 	var buf bytes.Buffer
 	if _, err := buf.ReadFrom(c.Request.Body); err != nil {
 		http.Error(c.Writer, err.Error(), http.StatusBadRequest)
@@ -64,7 +64,7 @@ func HandlePostAPI(c *gin.Context, database db.Database, BaseURL string) {
 		return
 	}
 
-	shortURL, err := saveLinkToDatabase(database, BaseURL, request.URL)
+	shortURL, err := saveLinkToStorage(ls, BaseURL, request.URL)
 	if err != nil {
 		c.String(http.StatusInternalServerError, "Could not convert the link.")
 	}
