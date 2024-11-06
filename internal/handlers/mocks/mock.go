@@ -3,8 +3,13 @@ package mocks
 type Storage struct{}
 
 type LinkStorage interface {
+	Ping() error
 	SaveLink(id, link string)
 	GetLink(id string) (string, bool)
+}
+
+func (s *Storage) Ping() error {
+	return nil
 }
 
 func (s *Storage) SaveLink(id, link string) {

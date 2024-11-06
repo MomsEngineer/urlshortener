@@ -8,9 +8,10 @@ import (
 )
 
 type Config struct {
-	Address  string `env:"SERVER_ADDRESS"`
-	BaseURL  string `env:"BASE_URL"`
-	FilePath string `env:"FILE_STORAGE_PATH"`
+	Address     string `env:"SERVER_ADDRESS"`
+	BaseURL     string `env:"BASE_URL"`
+	FilePath    string `env:"FILE_STORAGE_PATH"`
+	DataBaseDSN string `env:"DATABASE_DSN"`
 }
 
 func NewConfig() *Config {
@@ -20,10 +21,11 @@ func NewConfig() *Config {
 		log.Error(err)
 	}
 
-	var a, b, f string
+	var a, b, f, d string
 	flag.StringVar(&a, "a", "localhost:8080", "HTTP server address")
 	flag.StringVar(&b, "b", "http://localhost:8080", "Base URL for shortened links")
 	flag.StringVar(&f, "f", "/tmp/short-url-db.json", "The path to storage file")
+	flag.StringVar(&d, "d", "", "The database Data Source Name")
 	flag.Parse()
 
 	if cfg.Address == "" {
@@ -36,6 +38,10 @@ func NewConfig() *Config {
 
 	if cfg.FilePath == "" {
 		cfg.FilePath = f
+	}
+
+	if cfg.DataBaseDSN == "" {
+		cfg.DataBaseDSN = d
 	}
 
 	return cfg
