@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-
 	"github.com/MomsEngineer/urlshortener/internal/compresser"
 	"github.com/MomsEngineer/urlshortener/internal/config"
 	"github.com/MomsEngineer/urlshortener/internal/handlers"
@@ -18,7 +16,7 @@ func main() {
 
 	s, err := storage.Create(cfg.DataBaseDSN, cfg.FilePath)
 	if err != nil {
-		fmt.Println("Could not create a storage")
+		panic("Could not create a storage")
 	}
 	defer s.Close()
 

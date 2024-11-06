@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/MomsEngineer/urlshortener/internal/storage/db"
@@ -24,12 +25,9 @@ type Storage struct {
 }
 
 func Create(dbDSN, fileName string) (*Storage, error) {
-	if dbDSN == "" {
-		return nil, errors.New("DSN is empty")
-	}
 	realDB, err := realdb.NewRealDB(dbDSN)
 	if err != nil {
-		return nil, err
+		fmt.Println(err)
 	}
 
 	if fileName == "" {
@@ -85,6 +83,9 @@ func (s *Storage) GetLink(id string) (string, bool) {
 }
 
 func (s *Storage) Ping() error {
+	if s.realdb == nil {
+		return errors.New("The real DB has not been created")
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
