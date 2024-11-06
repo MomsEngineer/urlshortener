@@ -84,7 +84,7 @@ func (s *Storage) GetLink(id string) (string, bool) {
 
 func (s *Storage) Ping() error {
 	if s.realdb == nil {
-		return errors.New("The real DB has not been created")
+		return errors.New("the real DB has not been created")
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
