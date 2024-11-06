@@ -14,7 +14,10 @@ func main() {
 
 	cfg := config.NewConfig()
 
-	s, _ := storage.Create(cfg.FilePath)
+	s, err := storage.Create(cfg.DataBaseDSN, cfg.FilePath)
+	if err != nil {
+		panic("Could not create a storage")
+	}
 	defer s.Close()
 
 	router := gin.New()
@@ -33,6 +36,10 @@ func main() {
 
 	router.GET("/:id", func(c *gin.Context) {
 		handlers.HandleGet(c, s)
+	})
+
+	router.GET("/ping", func(c *gin.Context) {
+		handlers.HandlePing(c, s)
 	})
 
 	router.Run(cfg.Address)

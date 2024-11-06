@@ -48,6 +48,15 @@ func HandleGet(c *gin.Context, ls storage.LinkStorage) {
 	c.Redirect(http.StatusTemporaryRedirect, link)
 }
 
+func HandlePing(c *gin.Context, ls storage.LinkStorage) {
+	if err := ls.Ping(); err != nil {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	c.Status(http.StatusOK)
+}
+
 func HandlePostAPI(c *gin.Context, ls storage.LinkStorage, BaseURL string) {
 	var buf bytes.Buffer
 	if _, err := buf.ReadFrom(c.Request.Body); err != nil {
