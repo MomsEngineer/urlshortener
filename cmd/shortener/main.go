@@ -14,7 +14,9 @@ func main() {
 
 	cfg := config.NewConfig()
 
-	s, err := storage.Create(cfg.DataBaseDSN, cfg.FilePath)
+	log := logger.Create()
+
+	s, err := storage.Create(log, cfg.DataBaseDSN, cfg.FilePath)
 	if err != nil {
 		panic("Could not create a storage")
 	}
@@ -23,7 +25,7 @@ func main() {
 	router := gin.New()
 	router.SetTrustedProxies(nil)
 
-	router.Use(logger.Create().Logger())
+	router.Use(log.Logger())
 	router.Use(compresser.CompresserMiddleware())
 
 	router.POST("/", func(c *gin.Context) {

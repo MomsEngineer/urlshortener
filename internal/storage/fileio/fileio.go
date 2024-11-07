@@ -25,25 +25,27 @@ type Writer struct {
 }
 
 type FileIO struct {
-	r *Reader
-	w *Writer
+	r    *Reader
+	w    *Writer
+	Name string
 }
 
 func NewFileIO(fileName string) (*FileIO, error) {
-	r, err := NewReader(fileName)
+	r, err := newReader(fileName)
 	if err != nil {
 		return nil, err
 	}
 
-	w, err := NewWriter(fileName)
+	w, err := newWriter(fileName)
 	if err != nil {
 		r.close()
 		return nil, err
 	}
 
 	return &FileIO{
-		r: r,
-		w: w,
+		r:    r,
+		w:    w,
+		Name: fileName,
 	}, nil
 }
 
@@ -77,7 +79,7 @@ func (f *FileIO) Close() error {
 	return f.w.close()
 }
 
-func NewReader(fileName string) (*Reader, error) {
+func newReader(fileName string) (*Reader, error) {
 	file, err := os.OpenFile(fileName, os.O_RDONLY|os.O_CREATE, 0666)
 	if err != nil {
 		return nil, err
@@ -103,7 +105,7 @@ func (r *Reader) close() error {
 	return r.file.Close()
 }
 
-func NewWriter(fileName string) (*Writer, error) {
+func newWriter(fileName string) (*Writer, error) {
 	file, err := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		return nil, err
