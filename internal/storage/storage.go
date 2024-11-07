@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/MomsEngineer/urlshortener/internal/logger"
-	"github.com/MomsEngineer/urlshortener/internal/storage/db"
 	"github.com/MomsEngineer/urlshortener/internal/storage/fileio"
+	"github.com/MomsEngineer/urlshortener/internal/storage/memory"
 	"github.com/MomsEngineer/urlshortener/internal/storage/realdb"
 )
 
@@ -19,12 +19,12 @@ type LinkStorage interface {
 
 type Storage struct {
 	realdb *sql.DB
-	db     *db.DB
+	memory *memory.LinksMap
 	file   *fileio.FileIO
 	log    logger.Logger
 }
 
-func getFileIO(db *db.DB, fileName string) (*fileio.FileIO, error) {
+func getFileIO(lm *memory.LinksMap, fileName string) (*fileio.FileIO, error) {
 	file, err := fileio.NewFileIO(fileName)
 	if err != nil {
 		return nil, err
@@ -36,7 +36,7 @@ func getFileIO(db *db.DB, fileName string) (*fileio.FileIO, error) {
 	}
 
 	for k, v := range m {
-		db.SaveLink(k, v)
+		lm.SaveLink(k, v)
 	}
 
 	return file, nil
@@ -44,8 +44,8 @@ func getFileIO(db *db.DB, fileName string) (*fileio.FileIO, error) {
 
 func Create(log logger.Logger, dbDSN, fileName string) (*Storage, error) {
 	storage := &Storage{
-		db:  db.NewDB(),
-		log: log,
+		memory: memory.NewLinksMap(),
+		log:    log,
 	}
 
 	realDB, err := realdb.NewRealDB(dbDSN)
@@ -58,7 +58,7 @@ func Create(log logger.Logger, dbDSN, fileName string) (*Storage, error) {
 		return storage, nil
 	}
 
-	file, err := getFileIO(storage.db, fileName)
+	file, err := getFileIO(storage.memory, fileName)
 	if err != nil {
 		log.Error("Failed to create file for IO", err)
 	}
@@ -85,12 +85,12 @@ func (s *Storage) SaveLink(id, link string) {
 		s.log.Debug("Saved to file:", s.file.Name)
 	}
 
-	s.db.SaveLink(id, link)
+	s.memory.SaveLink(id, link)
 	s.log.Debug("Saved to db")
 }
 
 func (s *Storage) GetLink(id string) (string, bool) {
-	return s.db.GetLink(id)
+	return s.memory.GetLink(id)
 }
 
 func (s *Storage) Ping() error {
