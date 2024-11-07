@@ -2,6 +2,7 @@ package fileio
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"os"
 	"strconv"
@@ -21,13 +22,13 @@ type Reader struct {
 type Writer struct {
 	file    *os.File
 	encoder *json.Encoder
-	counter uint
 }
 
 type FileIO struct {
-	r    *Reader
-	w    *Writer
-	Name string
+	counter uint
+	Name    string
+	r       *Reader
+	w       *Writer
 }
 
 func NewFileIO(fileName string) (*FileIO, error) {
@@ -50,7 +51,7 @@ func NewFileIO(fileName string) (*FileIO, error) {
 }
 
 func (f *FileIO) Read() (map[string]string, error) {
-	defer f.r.close()
+	//defer f.r.close()
 	m := map[string]string{}
 
 	for {
@@ -64,19 +65,32 @@ func (f *FileIO) Read() (map[string]string, error) {
 		m[entry.ShortURL] = entry.OriginalURL
 	}
 
+	f.counter = uint(len(m))
+
 	return m, nil
 }
 
 func (f *FileIO) Write(shortURL, originalURL string) error {
 	return f.w.writeEntry(&entry{
-		UUID:        strconv.FormatUint(uint64(f.w.counter+1), 10),
+		UUID:        strconv.FormatUint(uint64(f.counter+1), 10),
 		ShortURL:    shortURL,
 		OriginalURL: originalURL,
 	})
 }
 
 func (f *FileIO) Close() error {
-	return f.w.close()
+	errR := f.r.close()
+	errW := f.w.close()
+
+	if errR != nil && errW != nil {
+		return fmt.Errorf("failed to close reader: %v, failed to close writer: %v",
+			errR, errW)
+	} else if errR != nil {
+		return fmt.Errorf("failed to close reader: %v", errR)
+	} else if errW != nil {
+		return fmt.Errorf("failed to close writer: %v", errW)
+	}
+	return nil
 }
 
 func newReader(fileName string) (*Reader, error) {

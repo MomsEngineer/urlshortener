@@ -1,4 +1,4 @@
-package realdb
+package db
 
 import (
 	"database/sql"
@@ -6,6 +6,6 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
-func NewRealDB(dsn string) (*sql.DB, error) {
+func NewDB(dsn string) (*sql.DB, error) {
 	return sql.Open("pgx", dsn)
 }

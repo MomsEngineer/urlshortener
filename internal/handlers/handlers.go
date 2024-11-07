@@ -17,7 +17,10 @@ func saveLinkToStorage(ls storage.LinkStorage, baseURL, link string) (string, er
 		return "", err
 	}
 
-	ls.SaveLink(id, link)
+	err = ls.SaveLink(id, link)
+	if err != nil {
+		return "", err
+	}
 	shortURL := baseURL + "/" + id
 
 	return shortURL, nil
@@ -32,15 +35,18 @@ func HandlePost(c *gin.Context, ls storage.LinkStorage, BaseURL string) {
 
 	shortURL, err := saveLinkToStorage(ls, BaseURL, string(link))
 	if err != nil {
-		c.String(http.StatusInternalServerError, "Could not convert the link.")
+		c.String(http.StatusInternalServerError, "Failed to save link")
 	}
 	c.String(http.StatusCreated, shortURL)
 }
 
 func HandleGet(c *gin.Context, ls storage.LinkStorage) {
 	id := c.Param("id")
-	link, exists := ls.GetLink(id)
-	if !exists {
+	link, exists, err := ls.GetLink(id)
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		return
+	} else if !exists {
 		c.String(http.StatusNotFound, "Link not found")
 		return
 	}
@@ -75,7 +81,7 @@ func HandlePostAPI(c *gin.Context, ls storage.LinkStorage, BaseURL string) {
 
 	shortURL, err := saveLinkToStorage(ls, BaseURL, request.URL)
 	if err != nil {
-		c.String(http.StatusInternalServerError, "Could not convert the link.")
+		c.String(http.StatusInternalServerError, "Failed to save link")
 	}
 
 	response := struct {

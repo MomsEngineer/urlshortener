@@ -3,22 +3,23 @@ package storage
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"time"
 
 	"github.com/MomsEngineer/urlshortener/internal/logger"
+	"github.com/MomsEngineer/urlshortener/internal/storage/db"
 	"github.com/MomsEngineer/urlshortener/internal/storage/fileio"
 	"github.com/MomsEngineer/urlshortener/internal/storage/memory"
-	"github.com/MomsEngineer/urlshortener/internal/storage/realdb"
 )
 
 type LinkStorage interface {
 	Ping() error
-	SaveLink(id, link string)
-	GetLink(id string) (string, bool)
+	SaveLink(id, link string) error
+	GetLink(id string) (string, bool, error)
 }
 
 type Storage struct {
-	realdb *sql.DB
+	db     *sql.DB
 	memory *memory.LinksMap
 	file   *fileio.FileIO
 	log    logger.Logger
@@ -48,11 +49,11 @@ func Create(log logger.Logger, dbDSN, fileName string) (*Storage, error) {
 		log:    log,
 	}
 
-	realDB, err := realdb.NewRealDB(dbDSN)
+	db, err := db.NewDB(dbDSN)
 	if err != nil {
 		log.Error("Failed to create DB", err)
 	}
-	storage.realdb = realDB
+	storage.db = db
 
 	if fileName == "" {
 		return storage, nil
@@ -73,29 +74,40 @@ func (s *Storage) Close() {
 		s.log.Debug("Closed the file:", s.file.Name)
 	}
 
-	if s.realdb != nil {
+	if s.db != nil {
 		s.log.Debug("Closed the realdb")
-		s.realdb.Close()
+		s.db.Close()
 	}
 }
 
-func (s *Storage) SaveLink(id, link string) {
+func (s *Storage) SaveLink(id, link string) error {
 	if s.file != nil {
-		s.file.Write(id, link)
+		if err := s.file.Write(id, link); err != nil {
+			s.log.Error("Failed to write to file", err)
+			return err
+		}
 		s.log.Debug("Saved to file:", s.file.Name)
 	}
 
 	s.memory.SaveLink(id, link)
-	s.log.Debug("Saved to db")
+	s.log.Debug("Saved to memory")
+
+	return nil
 }
 
-func (s *Storage) GetLink(id string) (string, bool) {
-	return s.memory.GetLink(id)
+func (s *Storage) GetLink(id string) (string, bool, error) {
+	link, exist := s.memory.GetLink(id)
+	s.log.Debug("Get link from memory. Link:", link)
+	return link, exist, nil
 }
 
 func (s *Storage) Ping() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	return s.realdb.PingContext(ctx)
+	if s.db == nil {
+		return errors.New("the db is nil")
+	}
+
+	return s.db.PingContext(ctx)
 }
