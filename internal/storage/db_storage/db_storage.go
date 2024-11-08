@@ -5,8 +5,10 @@ import (
 	"database/sql"
 	"errors"
 	"regexp"
+	"strings"
 	"time"
 
+	ierrors "github.com/MomsEngineer/urlshortener/internal/errors"
 	"github.com/MomsEngineer/urlshortener/internal/logger"
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
@@ -68,7 +70,7 @@ func createTable(sqlDB *sql.DB, table string) error {
 	query := `CREATE TABLE IF NOT EXISTS ` + table + `(
 		id SERIAL PRIMARY KEY,
 		short_link VARCHAR(255) NOT NULL,
-		original_link TEXT NOT NULL
+		original_link TEXT NOT NULL UNIQUE
 	);`
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
@@ -96,6 +98,10 @@ func (db *Database) SaveLink(shortLink, originalLink string) error {
 	query := `INSERT INTO links (short_link, original_link) VALUES ($1, $2)`
 	_, err := db.sqlDB.ExecContext(ctx, query, shortLink, originalLink)
 	if err != nil {
+		if strings.Contains(err.Error(), "(SQLSTATE 23505)") {
+			log.Error("Error: Duplicate link"+originalLink, err)
+			return ierrors.ErrDuplicate
+		}
 		log.Error("Failed to insert record", err)
 		return err
 	}

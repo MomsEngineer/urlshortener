@@ -3,9 +3,11 @@ package handlers
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 
+	ierrors "github.com/MomsEngineer/urlshortener/internal/errors"
 	"github.com/MomsEngineer/urlshortener/internal/logger"
 	"github.com/MomsEngineer/urlshortener/internal/storage"
 	"github.com/MomsEngineer/urlshortener/internal/utils"
@@ -48,7 +50,14 @@ func HandlePost(c *gin.Context, ls storage.Storage, baseURL string) {
 
 	shortURL, err := saveLinkToStorage(ls, baseURL, string(link))
 	if err != nil {
+		if errors.Is(err, ierrors.ErrDuplicate) {
+			log.Error("Error: Duplicate entry for "+string(link), err)
+			c.Status(http.StatusConflict)
+			return
+		}
+
 		c.String(http.StatusInternalServerError, "Failed to save link")
+		return
 	}
 	c.String(http.StatusCreated, shortURL)
 }
