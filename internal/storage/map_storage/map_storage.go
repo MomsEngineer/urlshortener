@@ -1,6 +1,9 @@
 package mapstorage
 
-import "errors"
+import (
+	"context"
+	"errors"
+)
 
 type MapStorage struct {
 	Links map[string]string
@@ -14,6 +17,13 @@ func NewMapStorage() *MapStorage {
 
 func (lm *MapStorage) SaveLink(id, link string) error {
 	lm.Links[id] = link
+	return nil
+}
+
+func (lm *MapStorage) SaveLinksBatch(_ context.Context, links map[string]string) error {
+	for k, v := range links {
+		lm.Links[k] = v
+	}
 	return nil
 }
 

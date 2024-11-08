@@ -1,6 +1,7 @@
 package filestorage
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -90,6 +91,25 @@ func (fs *FileStorage) SaveLink(shortLink, originalLink string) error {
 	}
 
 	fs.counter++
+
+	return nil
+}
+
+func (fs *FileStorage) SaveLinksBatch(_ context.Context, links map[string]string) error {
+	for shortLink, originalLink := range links {
+		e := &entry{
+			UUID:        strconv.FormatUint(uint64(fs.counter+1), 10),
+			ShortURL:    shortLink,
+			OriginalURL: originalLink,
+		}
+
+		if err := fs.w.writeEntry(e); err != nil {
+			log.Error("Failed to save link", err)
+			return err
+		}
+
+		fs.counter++
+	}
 
 	return nil
 }

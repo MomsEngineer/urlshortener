@@ -36,6 +36,10 @@ func main() {
 		handlers.HandlePostAPI(c, s, cfg.BaseURL)
 	})
 
+	router.POST("/api/shorten/batch", func(c *gin.Context) {
+		handlers.HandlePostBatch(c, s, cfg.BaseURL)
+	})
+
 	router.GET("/:id", func(c *gin.Context) {
 		handlers.HandleGet(c, s)
 	})

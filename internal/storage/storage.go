@@ -1,6 +1,8 @@
 package storage
 
 import (
+	"context"
+
 	"github.com/MomsEngineer/urlshortener/internal/logger"
 	db "github.com/MomsEngineer/urlshortener/internal/storage/db_storage"
 	fs "github.com/MomsEngineer/urlshortener/internal/storage/file_storage"
@@ -10,6 +12,7 @@ import (
 var log = logger.Create()
 
 type Storage interface {
+	SaveLinksBatch(ctx context.Context, links map[string]string) error
 	SaveLink(shortLink, originalLink string) error
 	GetLink(shortLink string) (string, bool, error)
 	Ping() error

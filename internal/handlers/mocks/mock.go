@@ -1,8 +1,14 @@
 package mocks
 
+import "context"
+
 type Storage struct{}
 
-func (s *Storage) SaveLink(id, link string) error {
+func (s *Storage) SaveLink(_, _ string) error {
+	return nil
+}
+
+func (s *Storage) SaveLinksBatch(_ context.Context, _ map[string]string) error {
 	return nil
 }
 
