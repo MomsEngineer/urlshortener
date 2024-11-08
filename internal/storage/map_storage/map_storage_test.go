@@ -1,19 +1,20 @@
-package memory
+package mapstorage_test
 
 import (
 	"testing"
 
+	mapstorage "github.com/MomsEngineer/urlshortener/internal/storage/map_storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestNewLinksMap(t *testing.T) {
-	lm := NewLinksMap()
+	lm := mapstorage.NewMapStorage()
 	require.NotNil(t, lm)
 }
 
 func TestSavedLink(t *testing.T) {
-	lm := NewLinksMap()
+	lm := mapstorage.NewMapStorage()
 	require.NotNil(t, lm)
 
 	id := "abc123"
@@ -31,7 +32,7 @@ func TestSavedLink(t *testing.T) {
 }
 
 func TestGetLink(t *testing.T) {
-	lm := NewLinksMap()
+	lm := mapstorage.NewMapStorage()
 	require.NotNil(t, lm)
 
 	id := "abc123"
@@ -60,7 +61,7 @@ func TestGetLink(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			link, exists := lm.GetLink(tt.id)
+			link, exists, _ := lm.GetLink(tt.id)
 
 			require.Equal(t, tt.exists, exists, "expected existence status does not match")
 

@@ -50,7 +50,7 @@ func (l Logger) Error(msg string, err error) {
 	line, fn := getLineAndFileName()
 	t := fmt.Sprintf("line %d: %s(): %s | error: %v", line, fn, msg, err)
 
-	l.logger.Debug(t)
+	l.logger.Error(t)
 }
 
 func (l Logger) Debug(values ...any) {

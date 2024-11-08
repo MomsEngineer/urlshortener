@@ -16,7 +16,7 @@ func main() {
 
 	log := logger.Create()
 
-	s, err := storage.Create(log, cfg.DataBaseDSN, cfg.FilePath)
+	s, err := storage.Create(cfg.FilePath)
 	if err != nil {
 		panic("Could not create a storage")
 	}
