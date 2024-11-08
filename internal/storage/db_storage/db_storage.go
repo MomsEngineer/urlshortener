@@ -103,6 +103,32 @@ func (db *Database) SaveLink(shortLink, originalLink string) error {
 	return nil
 }
 
+func (db *Database) SaveLinksBatch(ctx context.Context, links map[string]string) error {
+	tx, err := db.sqlDB.BeginTx(ctx, nil)
+	if err != nil {
+		log.Error("Failed to create transaction", err)
+		return err
+	}
+	defer tx.Rollback()
+
+	query := "INSERT INTO " + db.table + " (short_link, original_link) VALUES($1, $2)"
+	stmt, err := tx.PrepareContext(ctx, query)
+	if err != nil {
+		log.Error("Failed to prepare statement", err)
+		return err
+	}
+	defer stmt.Close()
+
+	for short, original := range links {
+		_, err := stmt.ExecContext(ctx, short, original)
+		if err != nil {
+			log.Error("Failed to execute statement", err)
+			return err
+		}
+	}
+	return tx.Commit()
+}
+
 func (db *Database) GetLink(shortLink string) (string, bool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
