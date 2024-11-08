@@ -99,7 +99,7 @@ func (db *Database) SaveLink(shortLink, originalLink string) error {
 	_, err := db.sqlDB.ExecContext(ctx, query, shortLink, originalLink)
 	if err != nil {
 		if strings.Contains(err.Error(), "(SQLSTATE 23505)") {
-			log.Error("Error: Duplicate link"+originalLink, err)
+			log.Error("Error: Duplicate link "+originalLink, err)
 			return ierrors.ErrDuplicate
 		}
 		log.Error("Failed to insert record", err)
