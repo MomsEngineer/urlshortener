@@ -110,8 +110,8 @@ func (db *Database) GetLink(shortLink string) (string, bool, error) {
 	query := `SELECT original_link FROM ` + db.table + ` WHERE short_link = $1`
 	row := db.sqlDB.QueryRowContext(ctx, query, shortLink)
 
-	var original_link string
-	err := row.Scan(&original_link)
+	var originalLink string
+	err := row.Scan(&originalLink)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			log.Debug("Not found original link for short link", shortLink)
@@ -121,7 +121,7 @@ func (db *Database) GetLink(shortLink string) (string, bool, error) {
 		return "", false, err
 	}
 
-	return original_link, true, nil
+	return originalLink, true, nil
 }
 
 func (db *Database) Ping() error {

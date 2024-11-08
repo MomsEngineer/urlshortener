@@ -10,8 +10,8 @@ import (
 var log = logger.Create()
 
 type Storage interface {
-	SaveLink(short_link, original_link string) error
-	GetLink(short_link string) (string, bool, error)
+	SaveLink(shortLink, originalLink string) error
+	GetLink(shortLink string) (string, bool, error)
 	Ping() error
 	Close() error
 }
