@@ -1,42 +1,43 @@
-package db
+package mapstorage_test
 
 import (
 	"testing"
 
+	mapstorage "github.com/MomsEngineer/urlshortener/internal/storage/map_storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestNewDB(t *testing.T) {
-	database := NewDB()
-	require.NotNil(t, database)
+func TestNewLinksMap(t *testing.T) {
+	lm := mapstorage.NewMapStorage()
+	require.NotNil(t, lm)
 }
 
 func TestSavedLink(t *testing.T) {
-	database := NewDB()
-	require.NotNil(t, database)
+	lm := mapstorage.NewMapStorage()
+	require.NotNil(t, lm)
 
 	id := "abc123"
 	link := "https://example.com"
-	database.SaveLink(id, link)
+	lm.SaveLink(id, link)
 
 	expectedLinks := map[string]string{
 		id: link,
 	}
 
-	actualLinks := database.Links
+	actualLinks := lm.Links
 
 	assert.Equal(t, expectedLinks, actualLinks,
 		"The saved link does not match the expected link")
 }
 
 func TestGetLink(t *testing.T) {
-	database := NewDB()
-	require.NotNil(t, database)
+	lm := mapstorage.NewMapStorage()
+	require.NotNil(t, lm)
 
 	id := "abc123"
 	link := "https://example.com"
-	database.SaveLink(id, link)
+	lm.SaveLink(id, link)
 
 	tests := []struct {
 		name   string
@@ -60,7 +61,7 @@ func TestGetLink(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			link, exists := database.GetLink(tt.id)
+			link, exists, _ := lm.GetLink(tt.id)
 
 			require.Equal(t, tt.exists, exists, "expected existence status does not match")
 

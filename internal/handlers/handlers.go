@@ -11,19 +11,22 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func saveLinkToStorage(ls storage.LinkStorage, baseURL, link string) (string, error) {
-	id, err := utils.GenerateID(8)
+func saveLinkToStorage(ls storage.Storage, baseURL, link string) (string, error) {
+	short, err := utils.GenerateID(8)
 	if err != nil {
 		return "", err
 	}
 
-	ls.SaveLink(id, link)
-	shortURL := baseURL + "/" + id
+	err = ls.SaveLink(short, link)
+	if err != nil {
+		return "", err
+	}
+	shortURL := baseURL + "/" + short
 
 	return shortURL, nil
 }
 
-func HandlePost(c *gin.Context, ls storage.LinkStorage, BaseURL string) {
+func HandlePost(c *gin.Context, ls storage.Storage, BaseURL string) {
 	link, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		c.String(http.StatusInternalServerError, "Unable to read request body")
@@ -32,15 +35,18 @@ func HandlePost(c *gin.Context, ls storage.LinkStorage, BaseURL string) {
 
 	shortURL, err := saveLinkToStorage(ls, BaseURL, string(link))
 	if err != nil {
-		c.String(http.StatusInternalServerError, "Could not convert the link.")
+		c.String(http.StatusInternalServerError, "Failed to save link")
 	}
 	c.String(http.StatusCreated, shortURL)
 }
 
-func HandleGet(c *gin.Context, ls storage.LinkStorage) {
+func HandleGet(c *gin.Context, ls storage.Storage) {
 	id := c.Param("id")
-	link, exists := ls.GetLink(id)
-	if !exists {
+	link, exists, err := ls.GetLink(id)
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		return
+	} else if !exists {
 		c.String(http.StatusNotFound, "Link not found")
 		return
 	}
@@ -48,7 +54,7 @@ func HandleGet(c *gin.Context, ls storage.LinkStorage) {
 	c.Redirect(http.StatusTemporaryRedirect, link)
 }
 
-func HandlePing(c *gin.Context, ls storage.LinkStorage) {
+func HandlePing(c *gin.Context, ls storage.Storage) {
 	if err := ls.Ping(); err != nil {
 		c.Status(http.StatusInternalServerError)
 		return
@@ -57,7 +63,7 @@ func HandlePing(c *gin.Context, ls storage.LinkStorage) {
 	c.Status(http.StatusOK)
 }
 
-func HandlePostAPI(c *gin.Context, ls storage.LinkStorage, BaseURL string) {
+func HandlePostAPI(c *gin.Context, ls storage.Storage, BaseURL string) {
 	var buf bytes.Buffer
 	if _, err := buf.ReadFrom(c.Request.Body); err != nil {
 		http.Error(c.Writer, err.Error(), http.StatusBadRequest)
@@ -75,7 +81,7 @@ func HandlePostAPI(c *gin.Context, ls storage.LinkStorage, BaseURL string) {
 
 	shortURL, err := saveLinkToStorage(ls, BaseURL, request.URL)
 	if err != nil {
-		c.String(http.StatusInternalServerError, "Could not convert the link.")
+		c.String(http.StatusInternalServerError, "Failed to save link")
 	}
 
 	response := struct {
