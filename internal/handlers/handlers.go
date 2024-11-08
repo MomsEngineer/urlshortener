@@ -104,7 +104,7 @@ func HandlePostAPI(c *gin.Context, ls storage.Storage, baseURL string) {
 	shortURL, err := saveLinkToStorage(ls, baseURL, request.URL)
 	if err != nil {
 		if errors.Is(err, ierrors.ErrDuplicate) {
-			log.Error("Error: Duplicate entry for "+string(link), err)
+			log.Error("Error: Duplicate entry for "+string(request.URL), err)
 			c.Status(http.StatusConflict)
 			return
 		}
