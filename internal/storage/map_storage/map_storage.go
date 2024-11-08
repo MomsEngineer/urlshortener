@@ -24,7 +24,7 @@ func (lm *MapStorage) GetLink(id string) (string, bool, error) {
 
 func (lm *MapStorage) Ping() error {
 	if lm.Links == nil {
-		return errors.New("Links is nil")
+		return errors.New("links is nil")
 	}
 	return nil
 }
