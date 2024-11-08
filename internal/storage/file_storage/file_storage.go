@@ -77,11 +77,11 @@ func NewFileStorage(path string) (*FileStorage, error) {
 	return fs, nil
 }
 
-func (fs *FileStorage) SaveLink(id, link string) error {
+func (fs *FileStorage) SaveLink(short_link, original_link string) error {
 	e := &entry{
 		UUID:        strconv.FormatUint(uint64(fs.counter+1), 10),
-		ShortURL:    id,
-		OriginalURL: link,
+		ShortURL:    short_link,
+		OriginalURL: original_link,
 	}
 
 	if err := fs.w.writeEntry(e); err != nil {
@@ -94,7 +94,7 @@ func (fs *FileStorage) SaveLink(id, link string) error {
 	return nil
 }
 
-func (fs *FileStorage) GetLink(id string) (string, bool, error) {
+func (fs *FileStorage) GetLink(short_link string) (string, bool, error) {
 	_, err := fs.r.file.Seek(0, 0)
 	if err != nil {
 		log.Error("Failed to seek to the beginning of the file", err)
@@ -112,7 +112,7 @@ func (fs *FileStorage) GetLink(id string) (string, bool, error) {
 			return "", false, err
 		}
 
-		if entry.ShortURL == id {
+		if entry.ShortURL == short_link {
 			return entry.OriginalURL, true, nil
 		}
 	}

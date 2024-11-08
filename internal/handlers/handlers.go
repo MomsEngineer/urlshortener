@@ -12,16 +12,16 @@ import (
 )
 
 func saveLinkToStorage(ls storage.Storage, baseURL, link string) (string, error) {
-	id, err := utils.GenerateID(8)
+	short, err := utils.GenerateID(8)
 	if err != nil {
 		return "", err
 	}
 
-	err = ls.SaveLink(id, link)
+	err = ls.SaveLink(short, link)
 	if err != nil {
 		return "", err
 	}
-	shortURL := baseURL + "/" + id
+	shortURL := baseURL + "/" + short
 
 	return shortURL, nil
 }
