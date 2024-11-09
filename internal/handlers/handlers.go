@@ -33,7 +33,8 @@ func saveLinkToStorage(ctx context.Context, ls storage.Storage, baseURL, link st
 		return "", err
 	}
 
-	if oldShort, err := ls.SaveLink(ctx, short, link); err != nil {
+	oldShort, err := ls.SaveLink(ctx, short, link)
+	if err != nil {
 		short = oldShort
 	}
 	shortURL := baseURL + "/" + short
