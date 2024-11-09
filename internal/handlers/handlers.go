@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -26,19 +27,18 @@ type BatchResponse struct {
 	ShortURL      string `json:"short_url"`
 }
 
-func saveLinkToStorage(ls storage.Storage, baseURL, link string) (string, error) {
+func saveLinkToStorage(ctx context.Context, ls storage.Storage, baseURL, link string) (string, error) {
 	short, err := utils.GenerateID(8)
 	if err != nil {
 		return "", err
 	}
 
-	err = ls.SaveLink(short, link)
-	if err != nil {
-		return "", err
+	if oldShort, err := ls.SaveLink(ctx, short, link); err != nil {
+		short = oldShort
 	}
 	shortURL := baseURL + "/" + short
 
-	return shortURL, nil
+	return shortURL, err
 }
 
 func HandlePost(c *gin.Context, ls storage.Storage, baseURL string) {
@@ -48,11 +48,11 @@ func HandlePost(c *gin.Context, ls storage.Storage, baseURL string) {
 		return
 	}
 
-	shortURL, err := saveLinkToStorage(ls, baseURL, string(link))
+	shortURL, err := saveLinkToStorage(c.Request.Context(), ls, baseURL, string(link))
 	if err != nil {
 		if errors.Is(err, ierrors.ErrDuplicate) {
 			log.Error("Error: Duplicate entry for "+string(link), err)
-			c.Status(http.StatusConflict)
+			c.String(http.StatusConflict, shortURL)
 			return
 		}
 
@@ -64,7 +64,7 @@ func HandlePost(c *gin.Context, ls storage.Storage, baseURL string) {
 
 func HandleGet(c *gin.Context, ls storage.Storage) {
 	id := c.Param("id")
-	link, exists, err := ls.GetLink(id)
+	link, exists, err := ls.GetLink(c.Request.Context(), id)
 	if err != nil {
 		c.Status(http.StatusInternalServerError)
 		return
@@ -77,7 +77,7 @@ func HandleGet(c *gin.Context, ls storage.Storage) {
 }
 
 func HandlePing(c *gin.Context, ls storage.Storage) {
-	if err := ls.Ping(); err != nil {
+	if err := ls.Ping(c.Request.Context()); err != nil {
 		c.Status(http.StatusInternalServerError)
 		return
 	}
@@ -101,14 +101,17 @@ func HandlePostAPI(c *gin.Context, ls storage.Storage, baseURL string) {
 		return
 	}
 
-	shortURL, err := saveLinkToStorage(ls, baseURL, request.URL)
+	retCode := http.StatusCreated
+
+	shortURL, err := saveLinkToStorage(c.Request.Context(), ls, baseURL, request.URL)
 	if err != nil {
 		if errors.Is(err, ierrors.ErrDuplicate) {
 			log.Error("Error: Duplicate entry for "+string(request.URL), err)
-			c.Status(http.StatusConflict)
+			retCode = http.StatusConflict
+		} else {
+			c.String(http.StatusInternalServerError, "Failed to save link")
 			return
 		}
-		c.String(http.StatusInternalServerError, "Failed to save link")
 	}
 
 	response := struct {
@@ -117,13 +120,7 @@ func HandlePostAPI(c *gin.Context, ls storage.Storage, baseURL string) {
 		Result: shortURL,
 	}
 
-	resp, err := json.Marshal(response)
-	if err != nil {
-		http.Error(c.Writer, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	c.Data(http.StatusCreated, "application/json", resp)
+	c.JSON(retCode, response)
 }
 
 func HandlePostBatch(c *gin.Context, ls storage.Storage, baseURL string) {

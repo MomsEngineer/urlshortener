@@ -15,9 +15,9 @@ func NewMapStorage() *MapStorage {
 	}
 }
 
-func (lm *MapStorage) SaveLink(id, link string) error {
+func (lm *MapStorage) SaveLink(_ context.Context, id, link string) (string, error) {
 	lm.Links[id] = link
-	return nil
+	return "", nil
 }
 
 func (lm *MapStorage) SaveLinksBatch(_ context.Context, links map[string]string) error {
@@ -27,12 +27,12 @@ func (lm *MapStorage) SaveLinksBatch(_ context.Context, links map[string]string)
 	return nil
 }
 
-func (lm *MapStorage) GetLink(id string) (string, bool, error) {
+func (lm *MapStorage) GetLink(_ context.Context, id string) (string, bool, error) {
 	link, exists := lm.Links[id]
 	return link, exists, nil
 }
 
-func (lm *MapStorage) Ping() error {
+func (lm *MapStorage) Ping(_ context.Context) error {
 	if lm.Links == nil {
 		return errors.New("links is nil")
 	}

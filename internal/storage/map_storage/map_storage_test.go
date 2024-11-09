@@ -1,6 +1,7 @@
 package mapstorage_test
 
 import (
+	"context"
 	"testing"
 
 	mapstorage "github.com/MomsEngineer/urlshortener/internal/storage/map_storage"
@@ -19,7 +20,7 @@ func TestSavedLink(t *testing.T) {
 
 	id := "abc123"
 	link := "https://example.com"
-	lm.SaveLink(id, link)
+	lm.SaveLink(context.TODO(), id, link)
 
 	expectedLinks := map[string]string{
 		id: link,
@@ -37,7 +38,7 @@ func TestGetLink(t *testing.T) {
 
 	id := "abc123"
 	link := "https://example.com"
-	lm.SaveLink(id, link)
+	lm.SaveLink(context.TODO(), id, link)
 
 	tests := []struct {
 		name   string
@@ -61,7 +62,7 @@ func TestGetLink(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			link, exists, _ := lm.GetLink(tt.id)
+			link, exists, _ := lm.GetLink(context.TODO(), tt.id)
 
 			require.Equal(t, tt.exists, exists, "expected existence status does not match")
 
