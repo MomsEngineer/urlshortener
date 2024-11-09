@@ -78,7 +78,7 @@ func NewFileStorage(path string) (*FileStorage, error) {
 	return fs, nil
 }
 
-func (fs *FileStorage) SaveLink(shortLink, originalLink string) error {
+func (fs *FileStorage) SaveLink(_ context.Context, shortLink, originalLink string) (string, error) {
 	e := &entry{
 		UUID:        strconv.FormatUint(uint64(fs.counter+1), 10),
 		ShortURL:    shortLink,
@@ -87,12 +87,12 @@ func (fs *FileStorage) SaveLink(shortLink, originalLink string) error {
 
 	if err := fs.w.writeEntry(e); err != nil {
 		log.Error("Failed to save link", err)
-		return err
+		return "", err
 	}
 
 	fs.counter++
 
-	return nil
+	return "", nil
 }
 
 func (fs *FileStorage) SaveLinksBatch(_ context.Context, links map[string]string) error {
@@ -114,7 +114,7 @@ func (fs *FileStorage) SaveLinksBatch(_ context.Context, links map[string]string
 	return nil
 }
 
-func (fs *FileStorage) GetLink(shortLink string) (string, bool, error) {
+func (fs *FileStorage) GetLink(_ context.Context, shortLink string) (string, bool, error) {
 	_, err := fs.r.file.Seek(0, 0)
 	if err != nil {
 		log.Error("Failed to seek to the beginning of the file", err)
@@ -140,7 +140,7 @@ func (fs *FileStorage) GetLink(shortLink string) (string, bool, error) {
 	return "", false, nil
 }
 
-func (fs *FileStorage) Ping() error {
+func (fs *FileStorage) Ping(_ context.Context) error {
 	if fs.r == nil || fs.w == nil {
 		log.Error("Reader or writer is not initialized", nil)
 		return fmt.Errorf("reader or writer is not initialized")

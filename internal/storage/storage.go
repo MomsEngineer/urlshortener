@@ -12,10 +12,10 @@ import (
 var log = logger.Create()
 
 type Storage interface {
-	SaveLinksBatch(ctx context.Context, links map[string]string) error
-	SaveLink(shortLink, originalLink string) error
-	GetLink(shortLink string) (string, bool, error)
-	Ping() error
+	SaveLinksBatch(context.Context, map[string]string) error
+	SaveLink(context.Context, string, string) (string, error)
+	GetLink(context.Context, string) (string, bool, error)
+	Ping(context.Context) error
 	Close() error
 }
 

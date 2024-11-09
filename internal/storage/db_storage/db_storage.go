@@ -5,8 +5,10 @@ import (
 	"database/sql"
 	"errors"
 	"regexp"
+	"strings"
 	"time"
 
+	ierrors "github.com/MomsEngineer/urlshortener/internal/errors"
 	"github.com/MomsEngineer/urlshortener/internal/logger"
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
@@ -68,7 +70,7 @@ func createTable(sqlDB *sql.DB, table string) error {
 	query := `CREATE TABLE IF NOT EXISTS ` + table + `(
 		id SERIAL PRIMARY KEY,
 		short_link VARCHAR(255) NOT NULL,
-		original_link TEXT NOT NULL
+		original_link TEXT NOT NULL UNIQUE
 	);`
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
@@ -89,18 +91,57 @@ func isValidTableName(table string) bool {
 	return re.MatchString(table)
 }
 
-func (db *Database) SaveLink(shortLink, originalLink string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-
-	query := `INSERT INTO links (short_link, original_link) VALUES ($1, $2)`
-	_, err := db.sqlDB.ExecContext(ctx, query, shortLink, originalLink)
+func (db *Database) getShortLinkByOriginal(ctx context.Context, original string) (string, error) {
+	query := `SELECT short_link FROM ` + db.table + ` WHERE original_link = $1`
+	stmt, err := db.sqlDB.PrepareContext(ctx, query)
 	if err != nil {
-		log.Error("Failed to insert record", err)
-		return err
+		log.Error("Failed to prepare statement", err)
+		return "", err
+	}
+	defer stmt.Close()
+
+	var short string
+	row := stmt.QueryRowContext(ctx, original)
+	err = row.Scan(&short)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			log.Debug("Not found original link", original)
+			return "", err
+		}
+		log.Error("Failed to scan response from DB", err)
+		return "", err
 	}
 
-	return nil
+	return short, nil
+}
+
+// TODO: use getShortLinkByOriginal
+func (db *Database) SaveLink(ctx context.Context, short, original string) (string, error) {
+	query := "INSERT INTO " + db.table + " (short_link, original_link) VALUES ($1, $2)"
+	stmt, err := db.sqlDB.PrepareContext(ctx, query)
+	if err != nil {
+		log.Error("Failed to prepare statement", err)
+		return "", err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.ExecContext(ctx, short, original)
+	if err != nil {
+		if strings.Contains(err.Error(), "(SQLSTATE 23505)") {
+			log.Error("Error: Duplicate link "+original, err)
+
+			oldShort, err := db.getShortLinkByOriginal(ctx, original)
+			if err != nil {
+				log.Error("Faild to get link "+original, err)
+				return "", err
+			}
+			return oldShort, ierrors.ErrDuplicate
+		}
+		log.Error("Failed to insert record", err)
+		return "", err
+	}
+
+	return "", nil
 }
 
 func (db *Database) SaveLinksBatch(ctx context.Context, links map[string]string) error {
@@ -129,15 +170,19 @@ func (db *Database) SaveLinksBatch(ctx context.Context, links map[string]string)
 	return tx.Commit()
 }
 
-func (db *Database) GetLink(shortLink string) (string, bool, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-
+func (db *Database) GetLink(ctx context.Context, shortLink string) (string, bool, error) {
 	query := `SELECT original_link FROM ` + db.table + ` WHERE short_link = $1`
-	row := db.sqlDB.QueryRowContext(ctx, query, shortLink)
+	stmt, err := db.sqlDB.PrepareContext(ctx, query)
+	if err != nil {
+		log.Error("Failed to prepare statement", err)
+		return "", false, err
+	}
+	defer stmt.Close()
+
+	row := stmt.QueryRowContext(ctx, shortLink)
 
 	var originalLink string
-	err := row.Scan(&originalLink)
+	err = row.Scan(&originalLink)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			log.Debug("Not found original link for short link", shortLink)
@@ -150,9 +195,7 @@ func (db *Database) GetLink(shortLink string) (string, bool, error) {
 	return originalLink, true, nil
 }
 
-func (db *Database) Ping() error {
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
+func (db *Database) Ping(ctx context.Context) error {
 	return db.sqlDB.PingContext(ctx)
 }
 
