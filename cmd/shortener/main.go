@@ -14,13 +14,18 @@ func main() {
 
 	cfg := config.NewConfig()
 
-	s, _ := storage.Create(cfg.FilePath)
+	log := logger.Create()
+
+	s, err := storage.Create(cfg.DataBaseDSN, cfg.FilePath)
+	if err != nil {
+		panic("could not create a storage")
+	}
 	defer s.Close()
 
 	router := gin.New()
 	router.SetTrustedProxies(nil)
 
-	router.Use(logger.Create().Logger())
+	router.Use(log.Logger())
 	router.Use(compresser.CompresserMiddleware())
 
 	router.POST("/", func(c *gin.Context) {
@@ -31,8 +36,16 @@ func main() {
 		handlers.HandlePostAPI(c, s, cfg.BaseURL)
 	})
 
+	router.POST("/api/shorten/batch", func(c *gin.Context) {
+		handlers.HandlePostBatch(c, s, cfg.BaseURL)
+	})
+
 	router.GET("/:id", func(c *gin.Context) {
 		handlers.HandleGet(c, s)
+	})
+
+	router.GET("/ping", func(c *gin.Context) {
+		handlers.HandlePing(c, s)
 	})
 
 	router.Run(cfg.Address)

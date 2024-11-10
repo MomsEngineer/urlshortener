@@ -1,64 +1,47 @@
 package storage
 
 import (
-	"github.com/MomsEngineer/urlshortener/internal/storage/db"
-	"github.com/MomsEngineer/urlshortener/internal/storage/fileio"
+	"context"
+
+	"github.com/MomsEngineer/urlshortener/internal/logger"
+	db "github.com/MomsEngineer/urlshortener/internal/storage/db_storage"
+	fs "github.com/MomsEngineer/urlshortener/internal/storage/file_storage"
+	ms "github.com/MomsEngineer/urlshortener/internal/storage/map_storage"
 )
 
-type LinkStorage interface {
-	SaveLink(id, link string)
-	GetLink(id string) (string, bool)
+var log = logger.Create()
+
+type Storage interface {
+	SaveLinksBatch(context.Context, map[string]string) error
+	SaveLink(context.Context, string, string) (string, error)
+	GetLink(context.Context, string) (string, bool, error)
+	Ping(context.Context) error
+	Close() error
 }
 
-type Storage struct {
-	db   *db.DB
-	file *fileio.FileIO
-}
+func Create(dsn, filePath string) (Storage, error) {
+	if dsn != "" {
+		storage, err := db.NewDB(dsn)
+		if err != nil {
+			log.Error("Failed to create DB storage", err)
+			return nil, err
+		}
+		log.Debug("Created DB")
 
-func Create(fileName string) (*Storage, error) {
-	if fileName == "" {
-		return &Storage{
-			db:   db.NewDB(),
-			file: nil,
-		}, nil
+		return storage, nil
+	} else if filePath != "" {
+		storage, err := fs.NewFileStorage(filePath)
+		if err != nil {
+			log.Error("Failed to create file storage", err)
+			return nil, err
+		}
+		log.Debug("Created file storage")
+
+		return storage, nil
 	}
 
-	file, err := fileio.NewFileIO(fileName)
-	if err != nil {
-		return nil, err
-	}
+	storage := ms.NewMapStorage()
+	log.Debug("Created map storage")
 
-	db := db.NewDB()
-
-	m, err := file.Read()
-	if err != nil {
-		return nil, err
-	}
-
-	for k, v := range m {
-		db.SaveLink(k, v)
-	}
-
-	return &Storage{
-		db:   db,
-		file: file,
-	}, nil
-}
-
-func (s *Storage) Close() error {
-	if s.file == nil {
-		return nil
-	}
-	return s.file.Close()
-}
-
-func (s *Storage) SaveLink(id, link string) {
-	s.db.SaveLink(id, link)
-	if s.file != nil {
-		s.file.Write(id, link)
-	}
-}
-
-func (s *Storage) GetLink(id string) (string, bool) {
-	return s.db.GetLink(id)
+	return storage, nil
 }
