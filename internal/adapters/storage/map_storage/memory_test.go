@@ -1,21 +1,21 @@
-package memory_test
+package mapstorage_test
 
 import (
 	"context"
 	"testing"
 
-	"github.com/MomsEngineer/urlshortener/internal/adapters/storage/memory"
+	ms "github.com/MomsEngineer/urlshortener/internal/adapters/storage/map_storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestNewLinksMap(t *testing.T) {
-	lm := memory.NewMemoryStorage()
+	lm := ms.NewMapStorage()
 	require.NotNil(t, lm)
 }
 
 func TestSavedLink(t *testing.T) {
-	lm := memory.NewMemoryStorage()
+	lm := ms.NewMapStorage()
 	require.NotNil(t, lm)
 
 	id := "abc123"
@@ -33,7 +33,7 @@ func TestSavedLink(t *testing.T) {
 }
 
 func TestGetLink(t *testing.T) {
-	lm := memory.NewMemoryStorage()
+	lm := ms.NewMapStorage()
 	require.NotNil(t, lm)
 
 	id := "abc123"

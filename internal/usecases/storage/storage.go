@@ -40,7 +40,7 @@ func Create(dsn, filePath string) (Storage, error) {
 		return storage, nil
 	}
 
-	storage := ms.NewMemoryStorage()
+	storage := ms.NewMapStorage()
 	log.Debug("Created map storage")
 
 	return storage, nil
