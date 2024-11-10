@@ -18,5 +18,5 @@ func main() {
 	router := web.NewRouter()
 	web.SetupRoutes(router, s, cfg.BaseURL)
 
-	router.Run()
+	router.Run(cfg.Address)
 }
