@@ -3,10 +3,10 @@ package storage
 import (
 	"context"
 
-	"github.com/MomsEngineer/urlshortener/internal/logger"
-	db "github.com/MomsEngineer/urlshortener/internal/storage/db_storage"
-	fs "github.com/MomsEngineer/urlshortener/internal/storage/file_storage"
-	ms "github.com/MomsEngineer/urlshortener/internal/storage/map_storage"
+	"github.com/MomsEngineer/urlshortener/internal/adapters/logger"
+	db "github.com/MomsEngineer/urlshortener/internal/adapters/storage/db_storage"
+	fs "github.com/MomsEngineer/urlshortener/internal/adapters/storage/file_storage"
+	ms "github.com/MomsEngineer/urlshortener/internal/adapters/storage/map_storage"
 )
 
 var log = logger.Create()
@@ -40,7 +40,7 @@ func Create(dsn, filePath string) (Storage, error) {
 		return storage, nil
 	}
 
-	storage := ms.NewMapStorage()
+	storage := ms.NewMemoryStorage()
 	log.Debug("Created map storage")
 
 	return storage, nil

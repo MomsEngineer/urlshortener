@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	fs "github.com/MomsEngineer/urlshortener/internal/storage/file_storage"
+	fs "github.com/MomsEngineer/urlshortener/internal/adapters/storage/file_storage"
 	"github.com/stretchr/testify/require"
 )
 

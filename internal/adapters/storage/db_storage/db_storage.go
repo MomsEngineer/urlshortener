@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/MomsEngineer/urlshortener/internal/adapters/logger"
 	ierrors "github.com/MomsEngineer/urlshortener/internal/errors"
-	"github.com/MomsEngineer/urlshortener/internal/logger"
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 

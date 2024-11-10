@@ -1,4 +1,4 @@
-package handlers
+package web
 
 import (
 	"bytes"
@@ -8,9 +8,9 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/MomsEngineer/urlshortener/internal/adapters/logger"
 	ierrors "github.com/MomsEngineer/urlshortener/internal/errors"
-	"github.com/MomsEngineer/urlshortener/internal/logger"
-	"github.com/MomsEngineer/urlshortener/internal/storage"
+	"github.com/MomsEngineer/urlshortener/internal/usecases/storage"
 	"github.com/MomsEngineer/urlshortener/internal/utils"
 	"github.com/gin-gonic/gin"
 )

@@ -8,7 +8,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/MomsEngineer/urlshortener/internal/logger"
+	"github.com/MomsEngineer/urlshortener/internal/adapters/logger"
 )
 
 var log = logger.Create()

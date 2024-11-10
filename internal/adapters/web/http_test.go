@@ -1,4 +1,4 @@
-package handlers
+package web
 
 import (
 	"bytes"
@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/MomsEngineer/urlshortener/internal/handlers/mocks"
+	"github.com/MomsEngineer/urlshortener/internal/adapters/web/mocks"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 )
