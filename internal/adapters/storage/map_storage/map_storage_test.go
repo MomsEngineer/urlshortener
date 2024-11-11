@@ -2,9 +2,11 @@ package mapstorage_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	ms "github.com/MomsEngineer/urlshortener/internal/adapters/storage/map_storage"
+	"github.com/MomsEngineer/urlshortener/internal/entities/link"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -19,11 +21,14 @@ func TestSavedLink(t *testing.T) {
 	require.NotNil(t, lm)
 
 	id := "abc123"
-	link := "https://example.com"
-	lm.SaveLink(context.TODO(), id, link)
+	original := "https://example.com"
+	l, err := link.NewLink(id, original)
+	require.NoError(t, err)
+
+	lm.SaveLink(context.TODO(), l)
 
 	expectedLinks := map[string]string{
-		id: link,
+		id: original,
 	}
 
 	actualLinks := lm.Links
@@ -37,40 +42,42 @@ func TestGetLink(t *testing.T) {
 	require.NotNil(t, lm)
 
 	id := "abc123"
-	link := "https://example.com"
-	lm.SaveLink(context.TODO(), id, link)
+	original := "https://example.com"
+
+	l, err := link.NewLink(id, original)
+	require.NoError(t, err)
+
+	lm.SaveLink(context.TODO(), l)
 
 	tests := []struct {
-		name   string
-		id     string
-		want   string
-		exists bool
+		name string
+		id   string
+		want string
+		err  error
 	}{
 		{
-			name:   "Get an existing link",
-			id:     "abc123",
-			want:   "https://example.com",
-			exists: true,
+			name: "Get an existing link",
+			id:   "abc123",
+			want: "https://example.com",
+			err:  nil,
 		},
 		{
-			name:   "Get a non-existing link",
-			id:     "abc",
-			want:   "",
-			exists: false,
+			name: "Get a non-existing link",
+			id:   "abc",
+			want: "",
+			err:  errors.New("not found"),
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			link, exists, _ := lm.GetLink(context.TODO(), tt.id)
+			l, err := link.NewLink(tt.id, "")
+			require.NoError(t, err)
 
-			require.Equal(t, tt.exists, exists, "expected existence status does not match")
+			err = lm.GetLink(context.TODO(), l)
 
-			if tt.exists {
-				assert.Equal(t, tt.want, link, "expected link does not match")
-			} else {
-				assert.Empty(t, link, "expected link to be empty")
-			}
+			require.Equal(t, tt.err, err, "expected err does not match")
+			assert.Equal(t, tt.want, l.OriginalURL, "expected link does not match")
 		})
 	}
 }

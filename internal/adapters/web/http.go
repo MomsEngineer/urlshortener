@@ -2,7 +2,6 @@ package web
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -11,7 +10,6 @@ import (
 	"github.com/MomsEngineer/urlshortener/internal/adapters/logger"
 	ierrors "github.com/MomsEngineer/urlshortener/internal/errors"
 	"github.com/MomsEngineer/urlshortener/internal/usecases/storage"
-	"github.com/MomsEngineer/urlshortener/internal/utils"
 	"github.com/gin-gonic/gin"
 )
 
@@ -27,49 +25,10 @@ type BatchResponse struct {
 	ShortURL      string `json:"short_url"`
 }
 
-func saveLinkToStorage(ctx context.Context, ls storage.Storage, baseURL, link string) (string, error) {
-	short, err := utils.GenerateID(8)
-	if err != nil {
-		return "", err
-	}
-
-	oldShort, err := ls.SaveLink(ctx, short, link)
-	if err != nil {
-		short = oldShort
-	}
-	shortURL := baseURL + "/" + short
-
-	return shortURL, err
-}
-
-func HandlePost(c *gin.Context, ls storage.Storage, baseURL string) {
-	link, err := io.ReadAll(c.Request.Body)
-	if err != nil {
-		c.String(http.StatusInternalServerError, "Unable to read request body")
-		return
-	}
-
-	shortURL, err := saveLinkToStorage(c.Request.Context(), ls, baseURL, string(link))
-	if err != nil {
-		if errors.Is(err, ierrors.ErrDuplicate) {
-			log.Error("Error: Duplicate entry for "+string(link), err)
-			c.String(http.StatusConflict, shortURL)
-			return
-		}
-
-		c.String(http.StatusInternalServerError, "Failed to save link")
-		return
-	}
-	c.String(http.StatusCreated, shortURL)
-}
-
-func HandleGet(c *gin.Context, ls storage.Storage) {
+func HandleGet(c *gin.Context, s storage.StoregeInterface) {
 	id := c.Param("id")
-	link, exists, err := ls.GetLink(c.Request.Context(), id)
+	link, err := s.GetLink(c.Request.Context(), id)
 	if err != nil {
-		c.Status(http.StatusInternalServerError)
-		return
-	} else if !exists {
 		c.String(http.StatusNotFound, "Link not found")
 		return
 	}
@@ -77,8 +36,8 @@ func HandleGet(c *gin.Context, ls storage.Storage) {
 	c.Redirect(http.StatusTemporaryRedirect, link)
 }
 
-func HandlePing(c *gin.Context, ls storage.Storage) {
-	if err := ls.Ping(c.Request.Context()); err != nil {
+func HandlePing(c *gin.Context, s storage.StoregeInterface) {
+	if err := s.Ping(c.Request.Context()); err != nil {
 		c.Status(http.StatusInternalServerError)
 		return
 	}
@@ -86,7 +45,28 @@ func HandlePing(c *gin.Context, ls storage.Storage) {
 	c.Status(http.StatusOK)
 }
 
-func HandlePostAPI(c *gin.Context, ls storage.Storage, baseURL string) {
+func HandlePost(c *gin.Context, s storage.StoregeInterface, baseURL string) {
+	link, err := io.ReadAll(c.Request.Body)
+	if err != nil {
+		c.String(http.StatusInternalServerError, "Unable to read request body")
+		return
+	}
+
+	shortURL, err := s.SaveLink(c.Request.Context(), string(link))
+	if err != nil {
+		if errors.Is(err, ierrors.ErrDuplicate) {
+			log.Error("Error: Duplicate entry for "+string(link), err)
+			c.String(http.StatusConflict, baseURL+"/"+shortURL)
+			return
+		}
+
+		c.String(http.StatusInternalServerError, "Failed to save link")
+		return
+	}
+	c.String(http.StatusCreated, baseURL+"/"+shortURL)
+}
+
+func HandlePostAPI(c *gin.Context, s storage.StoregeInterface, baseURL string) {
 	var buf bytes.Buffer
 	if _, err := buf.ReadFrom(c.Request.Body); err != nil {
 		http.Error(c.Writer, err.Error(), http.StatusBadRequest)
@@ -104,7 +84,7 @@ func HandlePostAPI(c *gin.Context, ls storage.Storage, baseURL string) {
 
 	retCode := http.StatusCreated
 
-	shortURL, err := saveLinkToStorage(c.Request.Context(), ls, baseURL, request.URL)
+	shortURL, err := s.SaveLink(c.Request.Context(), request.URL)
 	if err != nil {
 		if errors.Is(err, ierrors.ErrDuplicate) {
 			log.Error("Error: Duplicate entry for "+string(request.URL), err)
@@ -118,13 +98,13 @@ func HandlePostAPI(c *gin.Context, ls storage.Storage, baseURL string) {
 	response := struct {
 		Result string `json:"result"`
 	}{
-		Result: shortURL,
+		Result: baseURL + "/" + shortURL,
 	}
 
 	c.JSON(retCode, response)
 }
 
-func HandlePostBatch(c *gin.Context, ls storage.Storage, baseURL string) {
+func HandlePostBatch(c *gin.Context, s storage.StoregeInterface, baseURL string) {
 	var requests []BatchRequest
 	err := json.NewDecoder(c.Request.Body).Decode(&requests)
 	if err != nil {
@@ -134,27 +114,23 @@ func HandlePostBatch(c *gin.Context, ls storage.Storage, baseURL string) {
 	}
 
 	links := make(map[string]string)
-	var responses []BatchResponse
 	for _, r := range requests {
-		short, err := utils.GenerateID(8)
-		if err != nil {
-			log.Error("Failed to generate short link", err)
-			c.String(http.StatusInternalServerError, "Failed to generate link")
-			return
-		}
-		links[short] = r.OriginalURL
-
-		responses = append(responses,
-			BatchResponse{
-				CorrelationID: r.CorrelationID,
-				ShortURL:      baseURL + "/" + short,
-			})
+		links[r.CorrelationID] = r.OriginalURL
 	}
 
-	if err = ls.SaveLinksBatch(c.Request.Context(), links); err != nil {
-		log.Error("Failed to save link", err)
+	if err = s.SaveLinksBatch(c.Request.Context(), links); err != nil {
+		log.Error("Failed to save links batch", err)
 		c.String(http.StatusInternalServerError, "Failed to save link")
 		return
+	}
+
+	var responses []BatchResponse
+	for id, short := range links {
+		responses = append(responses,
+			BatchResponse{
+				CorrelationID: id,
+				ShortURL:      baseURL + "/" + short,
+			})
 	}
 
 	c.JSON(http.StatusCreated, responses)

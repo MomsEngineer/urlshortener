@@ -12,7 +12,7 @@ func NewRouter() *gin.Engine {
 	return gin.New()
 }
 
-func SetupRoutes(router *gin.Engine, s storage.Storage, baseURL string) {
+func SetupRoutes(router *gin.Engine, s storage.StoregeInterface, baseURL string) {
 	router.Use(logger.Create().Logger())
 	router.Use(compresser.CompresserMiddleware())
 

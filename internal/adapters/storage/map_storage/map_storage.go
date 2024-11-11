@@ -3,6 +3,8 @@ package mapstorage
 import (
 	"context"
 	"errors"
+
+	"github.com/MomsEngineer/urlshortener/internal/entities/link"
 )
 
 type MapStorage struct {
@@ -15,21 +17,25 @@ func NewMapStorage() *MapStorage {
 	}
 }
 
-func (lm *MapStorage) SaveLink(_ context.Context, id, link string) (string, error) {
-	lm.Links[id] = link
-	return "", nil
+func (lm *MapStorage) SaveLink(_ context.Context, l *link.Link) error {
+	lm.Links[l.ShortURL] = l.OriginalURL
+	return nil
 }
 
-func (lm *MapStorage) SaveLinksBatch(_ context.Context, links map[string]string) error {
-	for k, v := range links {
-		lm.Links[k] = v
+func (lm *MapStorage) SaveLinksBatch(_ context.Context, links []*link.Link) error {
+	for _, l := range links {
+		lm.Links[l.ShortURL] = l.OriginalURL
 	}
 	return nil
 }
 
-func (lm *MapStorage) GetLink(_ context.Context, id string) (string, bool, error) {
-	link, exists := lm.Links[id]
-	return link, exists, nil
+func (lm *MapStorage) GetLink(_ context.Context, link *link.Link) error {
+	if o, exists := lm.Links[link.ShortURL]; exists {
+		link.OriginalURL = o
+		return nil
+	}
+
+	return errors.New("not found")
 }
 
 func (lm *MapStorage) Ping(_ context.Context) error {

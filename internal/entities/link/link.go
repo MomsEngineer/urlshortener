@@ -1,4 +1,4 @@
-package url
+package link
 
 import (
 	"crypto/rand"
@@ -6,21 +6,22 @@ import (
 	"errors"
 )
 
-type URL struct {
+type Link struct {
 	ShortURL    string
 	OriginalURL string
 }
 
-func NewURL(baseURL, link string) (*URL, error) {
-	short, err := GenerateID(8)
-	if err != nil {
-		return nil, err
+func NewLink(short, link string) (*Link, error) {
+	var err error
+	if short == "" {
+		short, err = GenerateID(8)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	shortURL := baseURL + "/" + short
-
-	return &URL{
-		ShortURL:    shortURL,
+	return &Link{
+		ShortURL:    short,
 		OriginalURL: link,
 	}, nil
 }

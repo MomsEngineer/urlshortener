@@ -3,12 +3,14 @@ package filestorage
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"strconv"
 
 	"github.com/MomsEngineer/urlshortener/internal/adapters/logger"
+	"github.com/MomsEngineer/urlshortener/internal/entities/link"
 )
 
 var log = logger.Create()
@@ -78,29 +80,12 @@ func NewFileStorage(path string) (*FileStorage, error) {
 	return fs, nil
 }
 
-func (fs *FileStorage) SaveLink(_ context.Context, shortLink, originalLink string) (string, error) {
-	e := &entry{
-		UUID:        strconv.FormatUint(uint64(fs.counter+1), 10),
-		ShortURL:    shortLink,
-		OriginalURL: originalLink,
-	}
-
-	if err := fs.w.writeEntry(e); err != nil {
-		log.Error("Failed to save link", err)
-		return "", err
-	}
-
-	fs.counter++
-
-	return "", nil
-}
-
-func (fs *FileStorage) SaveLinksBatch(_ context.Context, links map[string]string) error {
-	for shortLink, originalLink := range links {
+func (fs *FileStorage) SaveLinksBatch(_ context.Context, ls []*link.Link) error {
+	for _, l := range ls {
 		e := &entry{
 			UUID:        strconv.FormatUint(uint64(fs.counter+1), 10),
-			ShortURL:    shortLink,
-			OriginalURL: originalLink,
+			ShortURL:    l.ShortURL,
+			OriginalURL: l.OriginalURL,
 		}
 
 		if err := fs.w.writeEntry(e); err != nil {
@@ -114,11 +99,28 @@ func (fs *FileStorage) SaveLinksBatch(_ context.Context, links map[string]string
 	return nil
 }
 
-func (fs *FileStorage) GetLink(_ context.Context, shortLink string) (string, bool, error) {
+func (fs *FileStorage) SaveLink(_ context.Context, l *link.Link) error {
+	e := &entry{
+		UUID:        strconv.FormatUint(uint64(fs.counter+1), 10),
+		ShortURL:    l.ShortURL,
+		OriginalURL: l.OriginalURL,
+	}
+
+	if err := fs.w.writeEntry(e); err != nil {
+		log.Error("Failed to save link", err)
+		return err
+	}
+
+	fs.counter++
+
+	return nil
+}
+
+func (fs *FileStorage) GetLink(_ context.Context, l *link.Link) error {
 	_, err := fs.r.file.Seek(0, 0)
 	if err != nil {
 		log.Error("Failed to seek to the beginning of the file", err)
-		return "", false, err
+		return err
 	}
 
 	fs.r.decoder = json.NewDecoder(fs.r.file)
@@ -129,15 +131,16 @@ func (fs *FileStorage) GetLink(_ context.Context, shortLink string) (string, boo
 			break
 		} else if err != nil {
 			log.Error("Failed to read entry", err)
-			return "", false, err
+			return err
 		}
 
-		if entry.ShortURL == shortLink {
-			return entry.OriginalURL, true, nil
+		if entry.ShortURL == l.ShortURL {
+			l.OriginalURL = entry.OriginalURL
+			return nil
 		}
 	}
 
-	return "", false, nil
+	return errors.New("not found")
 }
 
 func (fs *FileStorage) Ping(_ context.Context) error {
