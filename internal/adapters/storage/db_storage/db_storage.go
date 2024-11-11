@@ -3,14 +3,15 @@ package dbstorage
 import (
 	"context"
 	"database/sql"
-	"errors"
-	"regexp"
+	"fmt"
 	"strings"
-	"time"
 
 	"github.com/MomsEngineer/urlshortener/internal/adapters/logger"
 	"github.com/MomsEngineer/urlshortener/internal/entities/link"
 	ierror "github.com/MomsEngineer/urlshortener/internal/errors"
+	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
@@ -22,74 +23,28 @@ type Database struct {
 }
 
 func NewDB(dsn string) (*Database, error) {
+	table := "links"
+
 	sqlDB, err := sql.Open("pgx", dsn)
 	if err != nil {
 		return nil, err
 	}
 
-	table := "links"
-	exist, err := tableExists(sqlDB, table)
+	driver, err := postgres.WithInstance(sqlDB, &postgres.Config{})
 	if err != nil {
-		log.Error("Failed to check table existence", err)
-		return nil, err
+		return nil, fmt.Errorf("failed to create migrate driver, %w", err)
 	}
 
-	if !exist {
-		if err := createTable(sqlDB, table); err != nil {
-			log.Error("Failed to create table", err)
-			return nil, err
-		}
+	m, err := migrate.NewWithDatabaseInstance("file://migration", table, driver)
+	if err != nil {
+		return nil, fmt.Errorf("failed to migrate: %w", err)
+	}
+
+	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+		return nil, fmt.Errorf("failed to do migrate %w", err)
 	}
 
 	return &Database{sqlDB: sqlDB, table: table}, nil
-}
-
-func tableExists(sqlDB *sql.DB, tableName string) (bool, error) {
-	query := `SELECT to_regclass($1)`
-
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
-
-	var result sql.NullString
-	err := sqlDB.QueryRowContext(ctx, query, tableName).Scan(&result)
-	if err != nil {
-		return false, err
-	}
-
-	if !result.Valid {
-		return false, nil
-	}
-
-	return true, nil
-}
-
-func createTable(sqlDB *sql.DB, table string) error {
-	if !isValidTableName(table) {
-		return errors.New("invalid table name")
-	}
-
-	query := `CREATE TABLE IF NOT EXISTS ` + table + `(
-		id SERIAL PRIMARY KEY,
-		short_link VARCHAR(255) NOT NULL,
-		original_link TEXT NOT NULL UNIQUE
-	);`
-
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
-
-	_, err := sqlDB.ExecContext(ctx, query)
-	if err != nil {
-		return err
-	}
-
-	log.Debug("Table", table, "created successfully")
-
-	return nil
-}
-
-func isValidTableName(table string) bool {
-	re := regexp.MustCompile(`^[a-zA-Z]+$`)
-	return re.MatchString(table)
 }
 
 func (db *Database) getShortLinkByOriginal(ctx context.Context, original string) (string, error) {

@@ -4,6 +4,7 @@ import (
 	"github.com/MomsEngineer/urlshortener/internal/adapters/config"
 	"github.com/MomsEngineer/urlshortener/internal/adapters/web"
 	"github.com/MomsEngineer/urlshortener/internal/usecases/storage"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
 func main() {
