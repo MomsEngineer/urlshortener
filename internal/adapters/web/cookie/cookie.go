@@ -76,7 +76,7 @@ func AuthCookieMiddleware() gin.HandlerFunc {
 		}
 
 		c.Set("userID", userID)
-		//setCookie(c, userID, cookieName)
+		c.SetCookie(cookieName, cookies.Value, 3600, "/", "", false, true)
 
 		c.Next()
 	}
