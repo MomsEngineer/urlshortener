@@ -19,7 +19,7 @@ type Claims struct {
 
 const SecretKey = "token"
 
-func CookieMiddleware() gin.HandlerFunc {
+func PublicCookieMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		cookieName := "token"
 		cookies, err := c.Request.Cookie(cookieName)
@@ -35,7 +35,6 @@ func CookieMiddleware() gin.HandlerFunc {
 			log.Error("No cookie", err)
 			userID = uuid.NewString()
 		} else if cookies != nil {
-			log.Debug("Cookie exists", cookies)
 			userID, err = checkCookie(cookies.Value)
 			if err != nil {
 				log.Debug("Invalid cookie", err)
@@ -52,6 +51,33 @@ func CookieMiddleware() gin.HandlerFunc {
 
 		c.Set("userID", userID)
 		setCookie(c, userID, cookieName)
+
+		c.Next()
+	}
+}
+
+func AuthCookieMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		cookieName := "token"
+		cookies, err := c.Request.Cookie(cookieName)
+		if err != nil {
+			log.Error("Failed to get a request cookie", err)
+			c.Status(http.StatusUnauthorized)
+			c.Abort()
+			return
+		}
+
+		userID, err := checkCookie(cookies.Value)
+		if err != nil || userID == "" {
+			log.Error("User id does not exist", err)
+			c.Status(http.StatusUnauthorized)
+			c.Abort()
+			return
+		}
+
+		c.Set("userID", userID)
+		//setCookie(c, userID, cookieName)
+
 		c.Next()
 	}
 }
@@ -68,7 +94,6 @@ func setCookie(c *gin.Context, userID, cookieName string) {
 }
 
 func checkCookie(tokenString string) (string, error) {
-	log.Debug("Start", tokenString)
 	claims := &Claims{}
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(t *jwt.Token) (interface{}, error) {
 		return []byte(SecretKey), nil
@@ -77,8 +102,6 @@ func checkCookie(tokenString string) (string, error) {
 		log.Error("Invalid or expired token:", err)
 		return "", err
 	}
-
-	log.Debug("End", claims.UserID)
 
 	return claims.UserID, nil
 }

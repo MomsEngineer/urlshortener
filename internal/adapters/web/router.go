@@ -16,29 +16,35 @@ func NewRouter() *gin.Engine {
 func SetupRoutes(router *gin.Engine, s storage.StoregeInterface, baseURL string) {
 	router.Use(logger.Create(logger.InfoLevel).Logger())
 	router.Use(compresser.CompresserMiddleware())
-	router.Use(cookie.CookieMiddleware())
+	router.Use()
 
-	router.POST("/", func(c *gin.Context) {
-		HandlePost(c, s, baseURL)
-	})
+	public := router.Group("/")
+	{
+		// Используем middleware только для стандартных маршрутов
+		public.Use(cookie.PublicCookieMiddleware())
 
-	router.POST("/api/shorten", func(c *gin.Context) {
-		HandlePostAPI(c, s, baseURL)
-	})
+		public.POST("/", func(c *gin.Context) {
+			HandlePost(c, s, baseURL)
+		})
 
-	router.POST("/api/shorten/batch", func(c *gin.Context) {
-		HandlePostBatch(c, s, baseURL)
-	})
+		public.POST("/api/shorten", func(c *gin.Context) {
+			HandlePostAPI(c, s, baseURL)
+		})
 
-	router.GET("/:id", func(c *gin.Context) {
-		HandleGet(c, s)
-	})
+		public.POST("/api/shorten/batch", func(c *gin.Context) {
+			HandlePostBatch(c, s, baseURL)
+		})
 
-	router.GET("/api/user/urls", func(c *gin.Context) {
+		public.GET("/:id", func(c *gin.Context) {
+			HandleGet(c, s)
+		})
+
+		public.GET("/ping", func(c *gin.Context) {
+			HandlePing(c, s)
+		})
+	}
+
+	router.GET("/api/user/urls", cookie.AuthCookieMiddleware(), func(c *gin.Context) {
 		HandleGetUserURL(c, s, baseURL)
-	})
-
-	router.GET("/ping", func(c *gin.Context) {
-		HandlePing(c, s)
 	})
 }
