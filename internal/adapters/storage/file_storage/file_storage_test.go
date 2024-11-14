@@ -24,13 +24,13 @@ func TestFileStorage(t *testing.T) {
 		os.Remove(path)
 	}()
 
-	l, err := link.NewLink("example", "https://example.com")
+	l, err := link.NewLink("userID", "example", "https://example.com")
 	require.NoError(t, err)
 
 	err = store.SaveLink(context.TODO(), l)
 	require.NoError(t, err)
 
-	l, err = link.NewLink("test", "https://test.com")
+	l, err = link.NewLink("userID", "test", "https://test.com")
 	require.NoError(t, err)
 
 	err = store.SaveLink(context.TODO(), l)
@@ -64,7 +64,7 @@ func TestFileStorage(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			l, err := link.NewLink(tt.short, "")
+			l, err := link.NewLink("userID", tt.short, "")
 			require.NoError(t, err)
 
 			err = store.GetLink(context.TODO(), l)

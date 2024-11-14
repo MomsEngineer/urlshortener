@@ -22,7 +22,7 @@ func TestSavedLink(t *testing.T) {
 
 	id := "abc123"
 	original := "https://example.com"
-	l, err := link.NewLink(id, original)
+	l, err := link.NewLink("userID", id, original)
 	require.NoError(t, err)
 
 	lm.SaveLink(context.TODO(), l)
@@ -44,7 +44,7 @@ func TestGetLink(t *testing.T) {
 	id := "abc123"
 	original := "https://example.com"
 
-	l, err := link.NewLink(id, original)
+	l, err := link.NewLink("userID", id, original)
 	require.NoError(t, err)
 
 	lm.SaveLink(context.TODO(), l)
@@ -71,7 +71,7 @@ func TestGetLink(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			l, err := link.NewLink(tt.id, "")
+			l, err := link.NewLink("userID", tt.id, "")
 			require.NoError(t, err)
 
 			err = lm.GetLink(context.TODO(), l)

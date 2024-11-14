@@ -7,19 +7,23 @@ import (
 
 type Storage struct{}
 
-func (s *Storage) SaveLink(context.Context, string) (string, error) {
+func (s *Storage) SaveLink(context.Context, string, string) (string, error) {
 	return "", nil
 }
 
-func (s *Storage) SaveLinksBatch(context.Context, map[string]string) error {
+func (s *Storage) SaveLinksBatch(context.Context, string, map[string]string) error {
 	return nil
 }
 
-func (s *Storage) GetLink(_ context.Context, id string) (link string, err error) {
+func (s *Storage) GetLink(_ context.Context, _ string, id string) (link string, err error) {
 	if id == "abc123" {
 		return "https://example.com", nil
 	}
 	return "", errors.New("not found")
+}
+
+func (s *Storage) GetLinksByUser(context.Context, string) (map[string]string, error) {
+	return nil, nil
 }
 
 func (s *Storage) Ping(_ context.Context) error {

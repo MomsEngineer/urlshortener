@@ -16,6 +16,7 @@ import (
 var log = logger.Create()
 
 type entry struct {
+	UserId      string `json:"user_id"`
 	UUID        string `json:"uuid"`
 	ShortURL    string `json:"short_url"`
 	OriginalURL string `json:"original_url"`
@@ -83,6 +84,7 @@ func NewFileStorage(path string) (*FileStorage, error) {
 func (fs *FileStorage) SaveLinksBatch(_ context.Context, ls []*link.Link) error {
 	for _, l := range ls {
 		e := &entry{
+			UserId:      l.UserID,
 			UUID:        strconv.FormatUint(uint64(fs.counter+1), 10),
 			ShortURL:    l.ShortURL,
 			OriginalURL: l.OriginalURL,
@@ -101,6 +103,7 @@ func (fs *FileStorage) SaveLinksBatch(_ context.Context, ls []*link.Link) error 
 
 func (fs *FileStorage) SaveLink(_ context.Context, l *link.Link) error {
 	e := &entry{
+		UserId:      l.UserID,
 		UUID:        strconv.FormatUint(uint64(fs.counter+1), 10),
 		ShortURL:    l.ShortURL,
 		OriginalURL: l.OriginalURL,
@@ -141,6 +144,34 @@ func (fs *FileStorage) GetLink(_ context.Context, l *link.Link) error {
 	}
 
 	return errors.New("not found")
+}
+
+func (fs *FileStorage) GetLinksByUser(ctx context.Context, userID string) (map[string]string, error) {
+	res := make(map[string]string)
+
+	_, err := fs.r.file.Seek(0, 0)
+	if err != nil {
+		log.Error("Failed to seek to the beginning of the file", err)
+		return nil, err
+	}
+
+	fs.r.decoder = json.NewDecoder(fs.r.file)
+
+	for {
+		entry, err := fs.r.readEntry()
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			log.Error("Failed to read entry", err)
+			return nil, err
+		}
+
+		if entry.UserId == userID {
+			res[entry.ShortURL] = entry.OriginalURL
+		}
+	}
+
+	return res, nil
 }
 
 func (fs *FileStorage) Ping(_ context.Context) error {

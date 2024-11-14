@@ -25,15 +25,77 @@ type BatchResponse struct {
 	ShortURL      string `json:"short_url"`
 }
 
+func getUserIDFromContext(c *gin.Context) (string, error) {
+	userID, exists := c.Get("userID")
+	if !exists {
+		log.Error("User ID not found in context", nil)
+		return "", errors.New("user ID not found in context")
+	}
+
+	userIDStr, ok := userID.(string)
+	if !ok {
+		log.Error("User ID is not a string", nil)
+		return "", errors.New("user ID is not a string")
+	}
+
+	log.Debug("User ID:", userIDStr)
+
+	return userIDStr, nil
+}
+
 func HandleGet(c *gin.Context, s storage.StoregeInterface) {
+	userId, err := getUserIDFromContext(c)
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
 	id := c.Param("id")
-	link, err := s.GetLink(c.Request.Context(), id)
+	link, err := s.GetLink(c.Request.Context(), userId, id)
 	if err != nil {
 		c.String(http.StatusNotFound, "Link not found")
 		return
 	}
 
 	c.Redirect(http.StatusTemporaryRedirect, link)
+}
+
+func HandleGetUserURL(c *gin.Context, s storage.StoregeInterface, baseURL string) {
+	userId, err := getUserIDFromContext(c)
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	links, err := s.GetLinksByUser(c.Request.Context(), userId)
+	if err != nil {
+		if errors.Is(err, ierrors.ErrNoContent) {
+			log.Debug("Get links by user", err)
+			c.Status(http.StatusNoContent)
+			return
+		}
+		log.Error("Failed to get link by user", err)
+		c.String(http.StatusInternalServerError, "Failed to get link by user")
+		return
+	}
+
+	responses := []struct {
+		ShortUrl    string `json:"short_url"`
+		OriginalUrl string `json:"original_url"`
+	}{}
+
+	for short, original := range links {
+		responses = append(responses, struct {
+			ShortUrl    string `json:"short_url"`
+			OriginalUrl string `json:"original_url"`
+		}{
+			ShortUrl:    baseURL + "/" + short,
+			OriginalUrl: original,
+		})
+	}
+
+	c.JSON(http.StatusOK, responses)
+
 }
 
 func HandlePing(c *gin.Context, s storage.StoregeInterface) {
@@ -46,13 +108,19 @@ func HandlePing(c *gin.Context, s storage.StoregeInterface) {
 }
 
 func HandlePost(c *gin.Context, s storage.StoregeInterface, baseURL string) {
+	userId, err := getUserIDFromContext(c)
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
 	link, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		c.String(http.StatusInternalServerError, "Unable to read request body")
 		return
 	}
 
-	shortURL, err := s.SaveLink(c.Request.Context(), string(link))
+	shortURL, err := s.SaveLink(c.Request.Context(), userId, string(link))
 	if err != nil {
 		if errors.Is(err, ierrors.ErrDuplicate) {
 			log.Error("Error: Duplicate entry for "+string(link), err)
@@ -67,6 +135,12 @@ func HandlePost(c *gin.Context, s storage.StoregeInterface, baseURL string) {
 }
 
 func HandlePostAPI(c *gin.Context, s storage.StoregeInterface, baseURL string) {
+	userId, err := getUserIDFromContext(c)
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
 	var buf bytes.Buffer
 	if _, err := buf.ReadFrom(c.Request.Body); err != nil {
 		http.Error(c.Writer, err.Error(), http.StatusBadRequest)
@@ -84,7 +158,7 @@ func HandlePostAPI(c *gin.Context, s storage.StoregeInterface, baseURL string) {
 
 	retCode := http.StatusCreated
 
-	shortURL, err := s.SaveLink(c.Request.Context(), request.URL)
+	shortURL, err := s.SaveLink(c.Request.Context(), userId, request.URL)
 	if err != nil {
 		if errors.Is(err, ierrors.ErrDuplicate) {
 			log.Error("Error: Duplicate entry for "+string(request.URL), err)
@@ -105,8 +179,14 @@ func HandlePostAPI(c *gin.Context, s storage.StoregeInterface, baseURL string) {
 }
 
 func HandlePostBatch(c *gin.Context, s storage.StoregeInterface, baseURL string) {
+	userId, err := getUserIDFromContext(c)
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
 	var requests []BatchRequest
-	err := json.NewDecoder(c.Request.Body).Decode(&requests)
+	err = json.NewDecoder(c.Request.Body).Decode(&requests)
 	if err != nil {
 		log.Error("Failed to decode request", err)
 		c.String(http.StatusBadRequest, "Failed to decode request")
@@ -118,7 +198,7 @@ func HandlePostBatch(c *gin.Context, s storage.StoregeInterface, baseURL string)
 		links[r.CorrelationID] = r.OriginalURL
 	}
 
-	if err = s.SaveLinksBatch(c.Request.Context(), links); err != nil {
+	if err = s.SaveLinksBatch(c.Request.Context(), userId, links); err != nil {
 		log.Error("Failed to save links batch", err)
 		c.String(http.StatusInternalServerError, "Failed to save link")
 		return

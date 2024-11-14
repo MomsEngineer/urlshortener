@@ -7,11 +7,12 @@ import (
 )
 
 type Link struct {
+	UserID      string
 	ShortURL    string
 	OriginalURL string
 }
 
-func NewLink(short, link string) (*Link, error) {
+func NewLink(userID, short, link string) (*Link, error) {
 	var err error
 	if short == "" {
 		short, err = GenerateID(8)
@@ -21,6 +22,7 @@ func NewLink(short, link string) (*Link, error) {
 	}
 
 	return &Link{
+		UserID:      userID,
 		ShortURL:    short,
 		OriginalURL: link,
 	}, nil
