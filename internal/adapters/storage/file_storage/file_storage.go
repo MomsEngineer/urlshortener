@@ -16,7 +16,7 @@ import (
 var log = logger.Create()
 
 type entry struct {
-	UserId      string `json:"user_id"`
+	UserID      string `json:"user_id"`
 	UUID        string `json:"uuid"`
 	ShortURL    string `json:"short_url"`
 	OriginalURL string `json:"original_url"`
@@ -84,7 +84,7 @@ func NewFileStorage(path string) (*FileStorage, error) {
 func (fs *FileStorage) SaveLinksBatch(_ context.Context, ls []*link.Link) error {
 	for _, l := range ls {
 		e := &entry{
-			UserId:      l.UserID,
+			UserID:      l.UserID,
 			UUID:        strconv.FormatUint(uint64(fs.counter+1), 10),
 			ShortURL:    l.ShortURL,
 			OriginalURL: l.OriginalURL,
@@ -103,7 +103,7 @@ func (fs *FileStorage) SaveLinksBatch(_ context.Context, ls []*link.Link) error 
 
 func (fs *FileStorage) SaveLink(_ context.Context, l *link.Link) error {
 	e := &entry{
-		UserId:      l.UserID,
+		UserID:      l.UserID,
 		UUID:        strconv.FormatUint(uint64(fs.counter+1), 10),
 		ShortURL:    l.ShortURL,
 		OriginalURL: l.OriginalURL,
@@ -166,7 +166,7 @@ func (fs *FileStorage) GetLinksByUser(ctx context.Context, userID string) (map[s
 			return nil, err
 		}
 
-		if entry.UserId == userID {
+		if entry.UserID == userID {
 			res[entry.ShortURL] = entry.OriginalURL
 		}
 	}
