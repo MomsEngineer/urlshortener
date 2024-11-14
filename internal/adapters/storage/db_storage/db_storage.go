@@ -15,7 +15,7 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
-var log = logger.Create()
+var log = logger.Create(logger.InfoLevel)
 
 type Database struct {
 	sqlDB *sql.DB
@@ -79,7 +79,8 @@ func (db *Database) SaveLinksBatch(ctx context.Context, ls []*link.Link) error {
 	}
 	defer tx.Rollback()
 
-	query := "INSERT INTO " + db.table + " (short_link, original_link) VALUES($1, $2)"
+	query := "INSERT INTO " + db.table +
+		" (user_id, short_link, original_link) VALUES($1, $2, $3)"
 	stmt, err := tx.PrepareContext(ctx, query)
 	if err != nil {
 		log.Error("Failed to prepare statement", err)
@@ -88,7 +89,7 @@ func (db *Database) SaveLinksBatch(ctx context.Context, ls []*link.Link) error {
 	defer stmt.Close()
 
 	for _, l := range ls {
-		_, err := stmt.ExecContext(ctx, l.ShortURL, l.OriginalURL)
+		_, err := stmt.ExecContext(ctx, l.UserID, l.ShortURL, l.OriginalURL)
 		if err != nil {
 			log.Error("Failed to execute statement", err)
 			return err
@@ -98,7 +99,8 @@ func (db *Database) SaveLinksBatch(ctx context.Context, ls []*link.Link) error {
 }
 
 func (db *Database) SaveLink(ctx context.Context, l *link.Link) error {
-	query := "INSERT INTO " + db.table + " (short_link, original_link) VALUES ($1, $2)"
+	query := "INSERT INTO " + db.table +
+		" (user_id, short_link, original_link) VALUES ($1, $2, $3)"
 	stmt, err := db.sqlDB.PrepareContext(ctx, query)
 	if err != nil {
 		log.Error("Failed to prepare statement", err)
@@ -106,7 +108,7 @@ func (db *Database) SaveLink(ctx context.Context, l *link.Link) error {
 	}
 	defer stmt.Close()
 
-	_, err = stmt.ExecContext(ctx, l.ShortURL, l.OriginalURL)
+	_, err = stmt.ExecContext(ctx, l.UserID, l.ShortURL, l.OriginalURL)
 	if err != nil {
 		if strings.Contains(err.Error(), "(SQLSTATE 23505)") {
 			log.Error("Error: Duplicate link "+l.OriginalURL, err)
@@ -148,6 +150,44 @@ func (db *Database) GetLink(ctx context.Context, l *link.Link) error {
 	}
 
 	return nil
+}
+
+func (db *Database) GetLinksByUser(ctx context.Context, userID string) (map[string]string, error) {
+	query := `SELECT short_link, original_link FROM ` + db.table + ` WHERE user_id = $1`
+	stmt, err := db.sqlDB.PrepareContext(ctx, query)
+	if err != nil {
+		log.Error("Failed to prepare statement", err)
+		return nil, err
+	}
+	defer stmt.Close()
+
+	row, err := stmt.QueryContext(ctx, userID)
+	if err != nil {
+		log.Error("Failed to execute query", err)
+		return nil, err
+	}
+	defer row.Close()
+
+	res := make(map[string]string)
+
+	for row.Next() {
+		log.Debug(" row.Next")
+		var shortLink, originalLink string
+		err = row.Scan(&shortLink, &originalLink)
+		if err != nil {
+			log.Error("Failed to scan response from DB", err)
+			return nil, err
+		}
+
+		res[shortLink] = originalLink
+	}
+
+	if err := row.Err(); err != nil {
+		log.Error("Error occurred while iterating over rows", err)
+		return nil, err
+	}
+
+	return res, nil
 }
 
 func (db *Database) Ping(ctx context.Context) error {

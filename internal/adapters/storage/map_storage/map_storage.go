@@ -8,34 +8,45 @@ import (
 )
 
 type MapStorage struct {
-	Links map[string]string
+	Links []*link.Link
 }
 
 func NewMapStorage() *MapStorage {
-	return &MapStorage{
-		Links: make(map[string]string),
-	}
+	return &MapStorage{}
 }
 
 func (lm *MapStorage) SaveLink(_ context.Context, l *link.Link) error {
-	lm.Links[l.ShortURL] = l.OriginalURL
+	lm.Links = append(lm.Links, l)
 	return nil
 }
 
 func (lm *MapStorage) SaveLinksBatch(_ context.Context, links []*link.Link) error {
 	for _, l := range links {
-		lm.Links[l.ShortURL] = l.OriginalURL
+		lm.SaveLink(context.TODO(), l)
 	}
 	return nil
 }
 
 func (lm *MapStorage) GetLink(_ context.Context, link *link.Link) error {
-	if o, exists := lm.Links[link.ShortURL]; exists {
-		link.OriginalURL = o
-		return nil
+	for _, l := range lm.Links {
+		if l.ShortURL == link.ShortURL {
+			link.OriginalURL = l.OriginalURL
+			return nil
+		}
 	}
 
 	return errors.New("not found")
+}
+
+func (lm *MapStorage) GetLinksByUser(ctx context.Context, userID string) (map[string]string, error) {
+	res := make(map[string]string)
+	for _, l := range lm.Links {
+		if l.UserID == userID {
+			res[l.ShortURL] = l.OriginalURL
+		}
+	}
+
+	return res, nil
 }
 
 func (lm *MapStorage) Ping(_ context.Context) error {

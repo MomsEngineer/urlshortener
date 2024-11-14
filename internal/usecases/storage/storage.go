@@ -12,20 +12,22 @@ import (
 	ierror "github.com/MomsEngineer/urlshortener/internal/errors"
 )
 
-var log = logger.Create()
+var log = logger.Create(logger.InfoLevel)
 
 type StoreInterface interface {
 	SaveLinksBatch(context.Context, []*link.Link) error
 	SaveLink(context.Context, *link.Link) error
 	GetLink(context.Context, *link.Link) error
+	GetLinksByUser(ctx context.Context, userID string) (map[string]string, error)
 	Ping(context.Context) error
 	Close() error
 }
 
 type StoregeInterface interface {
-	SaveLinksBatch(context.Context, map[string]string) error
-	SaveLink(context.Context, string) (string, error)
-	GetLink(context.Context, string) (string, error)
+	SaveLinksBatch(cxt context.Context, userID string, links map[string]string) error
+	SaveLink(ctx context.Context, userID, original string) (string, error)
+	GetLink(ctx context.Context, userID, short string) (string, error)
+	GetLinksByUser(ctx context.Context, userID string) (map[string]string, error)
 	Ping(context.Context) error
 	Close() error
 }
@@ -41,7 +43,7 @@ func Create(dsn, filePath string) (StoregeInterface, error) {
 			log.Error("Failed to create DB storage", err)
 			return nil, err
 		}
-		log.Debug("Created DB")
+		log.Info("Created DB")
 
 		return &Storage{store: store}, nil
 	} else if filePath != "" {
@@ -50,22 +52,22 @@ func Create(dsn, filePath string) (StoregeInterface, error) {
 			log.Error("Failed to create file storage", err)
 			return nil, err
 		}
-		log.Debug("Created file storage")
+		log.Info("Created file storage")
 
 		return &Storage{store: store}, nil
 	}
 
 	store := ms.NewMapStorage()
-	log.Debug("Created map storage")
+	log.Info("Created map storage")
 
 	return &Storage{store: store}, nil
 }
 
-func (s *Storage) SaveLinksBatch(ctx context.Context, ls map[string]string) error {
+func (s *Storage) SaveLinksBatch(ctx context.Context, userID string, ls map[string]string) error {
 	var links []*link.Link
 
 	for id, original := range ls {
-		l, err := link.NewLink("", original)
+		l, err := link.NewLink(userID, "", original)
 		if err != nil {
 			log.Error("Failed to create new link", err)
 			return err
@@ -83,8 +85,8 @@ func (s *Storage) SaveLinksBatch(ctx context.Context, ls map[string]string) erro
 	return nil
 }
 
-func (s *Storage) SaveLink(ctx context.Context, original string) (string, error) {
-	l, err := link.NewLink("", original)
+func (s *Storage) SaveLink(ctx context.Context, userID, original string) (string, error) {
+	l, err := link.NewLink(userID, "", original)
 	if err != nil {
 		log.Error("Failed to create new link", err)
 		return "", err
@@ -101,8 +103,8 @@ func (s *Storage) SaveLink(ctx context.Context, original string) (string, error)
 	return l.ShortURL, nil
 }
 
-func (s *Storage) GetLink(ctx context.Context, short string) (string, error) {
-	l, err := link.NewLink(short, "")
+func (s *Storage) GetLink(ctx context.Context, userID, short string) (string, error) {
+	l, err := link.NewLink(userID, short, "")
 	if err != nil {
 		log.Error("Failed to create new link", err)
 		return "", err
@@ -122,4 +124,19 @@ func (s *Storage) Close() error {
 
 func (s *Storage) Ping(ctx context.Context) error {
 	return s.store.Ping(ctx)
+}
+
+func (s *Storage) GetLinksByUser(ctx context.Context, userID string) (map[string]string, error) {
+	links, err := s.store.GetLinksByUser(ctx, userID)
+	if err != nil {
+		log.Error("Failed to get links", err)
+		return nil, err
+	}
+
+	if len(links) == 0 {
+		log.Debug("Not found link for userd id", userID)
+		return nil, ierror.ErrNoContent
+	}
+
+	return links, nil
 }

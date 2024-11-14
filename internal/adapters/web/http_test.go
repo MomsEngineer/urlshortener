@@ -18,12 +18,15 @@ func setup() *gin.Engine {
 
 	router := gin.New()
 	router.POST("/", func(c *gin.Context) {
+		c.Set("userID", "userID")
 		HandlePost(c, mockStorage, "http://localhost:8080/")
 	})
 	router.POST("/api/shorten", func(c *gin.Context) {
+		c.Set("userID", "userID")
 		HandlePostAPI(c, mockStorage, "http://localhost:8080/")
 	})
 	router.GET("/:id", func(c *gin.Context) {
+		c.Set("userID", "userID")
 		HandleGet(c, mockStorage)
 	})
 
