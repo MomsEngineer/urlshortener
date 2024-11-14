@@ -12,7 +12,7 @@ import (
 	ierror "github.com/MomsEngineer/urlshortener/internal/errors"
 )
 
-var log = logger.Create()
+var log = logger.Create(logger.InfoLevel)
 
 type StoreInterface interface {
 	SaveLinksBatch(context.Context, []*link.Link) error
@@ -43,7 +43,7 @@ func Create(dsn, filePath string) (StoregeInterface, error) {
 			log.Error("Failed to create DB storage", err)
 			return nil, err
 		}
-		log.Debug("Created DB")
+		log.Info("Created DB")
 
 		return &Storage{store: store}, nil
 	} else if filePath != "" {
@@ -52,13 +52,13 @@ func Create(dsn, filePath string) (StoregeInterface, error) {
 			log.Error("Failed to create file storage", err)
 			return nil, err
 		}
-		log.Debug("Created file storage")
+		log.Info("Created file storage")
 
 		return &Storage{store: store}, nil
 	}
 
 	store := ms.NewMapStorage()
-	log.Debug("Created map storage")
+	log.Info("Created map storage")
 
 	return &Storage{store: store}, nil
 }

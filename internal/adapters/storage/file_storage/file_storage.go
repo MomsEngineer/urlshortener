@@ -13,7 +13,7 @@ import (
 	"github.com/MomsEngineer/urlshortener/internal/entities/link"
 )
 
-var log = logger.Create()
+var log = logger.Create(logger.InfoLevel)
 
 type entry struct {
 	UserID      string `json:"user_id"`

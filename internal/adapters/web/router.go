@@ -14,7 +14,7 @@ func NewRouter() *gin.Engine {
 }
 
 func SetupRoutes(router *gin.Engine, s storage.StoregeInterface, baseURL string) {
-	router.Use(logger.Create().Logger())
+	router.Use(logger.Create(logger.InfoLevel).Logger())
 	router.Use(compresser.CompresserMiddleware())
 	router.Use(cookie.CookieMiddleware())
 

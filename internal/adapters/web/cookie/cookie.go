@@ -10,7 +10,7 @@ import (
 	"github.com/google/uuid"
 )
 
-var log = logger.Create()
+var log = logger.Create(logger.InfoLevel)
 
 type Claims struct {
 	jwt.RegisteredClaims
@@ -32,6 +32,7 @@ func CookieMiddleware() gin.HandlerFunc {
 
 		var userID string
 		if errors.Is(err, http.ErrNoCookie) {
+			log.Error("No cookie", err)
 			userID = uuid.NewString()
 		} else if cookies != nil {
 			userID, err = checkCookie(cookies.Value)
@@ -49,9 +50,8 @@ func CookieMiddleware() gin.HandlerFunc {
 		}
 
 		c.Set("userID", userID)
-		c.Next()
-
 		setCookie(c, userID, cookieName)
+		c.Next()
 	}
 }
 

@@ -13,7 +13,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-var log = logger.Create()
+var log = logger.Create(logger.InfoLevel)
 
 type BatchRequest struct {
 	CorrelationID string `json:"correlation_id"`

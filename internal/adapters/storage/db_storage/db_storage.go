@@ -15,7 +15,7 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
-var log = logger.Create()
+var log = logger.Create(logger.InfoLevel)
 
 type Database struct {
 	sqlDB *sql.DB

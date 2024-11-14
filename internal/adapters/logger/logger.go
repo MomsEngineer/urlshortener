@@ -9,15 +9,36 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 type Logger struct {
 	logger *zap.Logger
 }
 
-func Create() Logger {
+type Level int8
+
+const (
+	DebugLevel Level = iota - 1
+	InfoLevel
+	WarnLevel
+	ErrorLevel
+	DPanicLevel
+	PanicLevel
+	FatalLevel
+)
+
+func Create(level Level) Logger {
+	config := zap.NewDevelopmentConfig()
+	config.Level = zap.NewAtomicLevelAt(zapcore.Level(level))
+
+	logger, err := config.Build()
+	if err != nil {
+		panic(err)
+	}
+
 	return Logger{
-		logger: zap.NewExample(),
+		logger: logger,
 	}
 }
 
@@ -59,6 +80,14 @@ func (l Logger) Debug(values ...any) {
 	t := fmt.Sprintf("line %d: %s(): %s", line, fn, msg)
 
 	l.logger.Debug(t)
+}
+
+func (l Logger) Info(values ...any) {
+	msg := strings.Join(convertToStringSlice(values...), " ")
+	line, fn := getLineAndFileName()
+	t := fmt.Sprintf("line %d: %s(): %s", line, fn, msg)
+
+	l.logger.Info(t)
 }
 
 func getLineAndFileName() (int, string) {
