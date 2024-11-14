@@ -22,7 +22,7 @@ func (lm *MapStorage) SaveLink(_ context.Context, l *link.Link) error {
 
 func (lm *MapStorage) SaveLinksBatch(_ context.Context, links []*link.Link) error {
 	for _, l := range links {
-		lm.SaveLink(nil, l)
+		lm.SaveLink(context.TODO(), l)
 	}
 	return nil
 }

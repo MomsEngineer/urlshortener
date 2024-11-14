@@ -17,7 +17,7 @@ type Claims struct {
 	UserID string
 }
 
-const SECRET_KEY = "token"
+const SecretKey = "token"
 
 func CookieMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -69,7 +69,7 @@ func setCookie(c *gin.Context, userID, cookieName string) {
 func checkCookie(tokenString string) (string, error) {
 	claims := &Claims{}
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(t *jwt.Token) (interface{}, error) {
-		return []byte(SECRET_KEY), nil
+		return []byte(SecretKey), nil
 	})
 	if err != nil || !token.Valid {
 		log.Error("Invalid or expired token:", err)
@@ -79,12 +79,12 @@ func checkCookie(tokenString string) (string, error) {
 	return claims.UserID, nil
 }
 
-func buildJWTString(userId string) (string, error) {
+func buildJWTString(userID string) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
-		UserID: userId,
+		UserID: userID,
 	})
 
-	tokenString, err := token.SignedString([]byte(SECRET_KEY))
+	tokenString, err := token.SignedString([]byte(SecretKey))
 	if err != nil {
 		return "", err
 	}

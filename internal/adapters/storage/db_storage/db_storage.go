@@ -182,6 +182,11 @@ func (db *Database) GetLinksByUser(ctx context.Context, userID string) (map[stri
 		res[shortLink] = originalLink
 	}
 
+	if err := row.Err(); err != nil {
+		log.Error("Error occurred while iterating over rows", err)
+		return nil, err
+	}
+
 	return res, nil
 }
 
