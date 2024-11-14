@@ -30,6 +30,7 @@ const (
 
 func Create(level Level) Logger {
 	config := zap.NewDevelopmentConfig()
+	config.EncoderConfig.StacktraceKey = ""
 	config.Level = zap.NewAtomicLevelAt(zapcore.Level(level))
 
 	logger, err := config.Build()

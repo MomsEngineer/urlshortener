@@ -10,7 +10,7 @@ import (
 	"github.com/google/uuid"
 )
 
-var log = logger.Create(logger.InfoLevel)
+var log = logger.Create(logger.DebugLevel)
 
 type Claims struct {
 	jwt.RegisteredClaims
@@ -35,6 +35,7 @@ func CookieMiddleware() gin.HandlerFunc {
 			log.Error("No cookie", err)
 			userID = uuid.NewString()
 		} else if cookies != nil {
+			log.Debug("Cookie exists", cookies)
 			userID, err = checkCookie(cookies.Value)
 			if err != nil {
 				log.Debug("Invalid cookie", err)
@@ -67,6 +68,7 @@ func setCookie(c *gin.Context, userID, cookieName string) {
 }
 
 func checkCookie(tokenString string) (string, error) {
+	log.Debug("Start", tokenString)
 	claims := &Claims{}
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(t *jwt.Token) (interface{}, error) {
 		return []byte(SecretKey), nil
@@ -75,6 +77,8 @@ func checkCookie(tokenString string) (string, error) {
 		log.Error("Invalid or expired token:", err)
 		return "", err
 	}
+
+	log.Debug("End", claims.UserID)
 
 	return claims.UserID, nil
 }
