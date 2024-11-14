@@ -31,7 +31,9 @@ func TestSavedLink(t *testing.T) {
 		id: original,
 	}
 
-	actualLinks := lm.Links
+	actualLinks := map[string]string{
+		lm.Links[0].ShortURL: lm.Links[0].OriginalURL,
+	}
 
 	assert.Equal(t, expectedLinks, actualLinks,
 		"The saved link does not match the expected link")
